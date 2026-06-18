@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';">
 <meta name="referrer" content="no-referrer">
-<title>Aryan // honeybadger — Offensive-Detection Engineering</title>
+<title>Aryan // honeybadger — Detection Engineering</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -38,8 +38,8 @@ a{color:inherit;}
 #dither.failed ~ #dither-fallback{display:block;}
 
 /* ── GLASS NAV ── */
-nav{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:100;width:calc(100% - 32px);max-width:1080px;height:58px;padding:0 12px 0 22px;display:flex;justify-content:space-between;align-items:center;border-radius:16px;background:rgba(10,10,13,.55);border:1px solid var(--line);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);overflow:hidden;}
-nav::before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 22%,rgba(255,255,255,.12) 50%,transparent 78%);pointer-events:none;}
+nav{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:100;width:calc(100% - 32px);max-width:1080px;height:58px;padding:0 12px 0 22px;display:flex;justify-content:space-between;align-items:center;border-radius:16px;background:rgba(10,10,13,.55);border:1px solid var(--line);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);}
+nav::before{content:'';position:absolute;inset:0;border-radius:16px;background:linear-gradient(100deg,transparent 22%,rgba(255,255,255,.12) 50%,transparent 78%);pointer-events:none;}
 .nav-logo{position:relative;font-family:var(--sans);font-weight:700;font-size:17px;letter-spacing:-.01em;text-decoration:none;display:flex;align-items:center;gap:8px;}
 .nav-logo .mark{width:18px;height:18px;border-radius:5px;background:var(--text);display:inline-block;position:relative;}
 .nav-logo .mark::after{content:'';position:absolute;inset:4px;border-radius:2px;background:#0b0b0d;}
@@ -50,7 +50,8 @@ nav::before{content:'';position:absolute;inset:0;background:linear-gradient(100d
 .nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--glass-hi);}
 .nav-cta{font-family:var(--body);font-weight:600;font-size:13px;background:var(--accent);color:var(--accent-ink);border:none;padding:9px 17px;border-radius:999px;cursor:pointer;transition:transform .15s,opacity .15s;}
 .nav-cta:hover{transform:translateY(-1px);opacity:.9;}
-.nav-toggle{display:none;font-family:var(--body);font-weight:600;font-size:12px;background:var(--glass-hi);color:var(--text);border:1px solid var(--line);padding:8px 12px;border-radius:9px;cursor:pointer;}
+.nav-toggle{display:none;position:relative;width:44px;height:44px;background:transparent;color:var(--text);border:none;cursor:pointer;}
+.nav-toggle .nav-toggle-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
 
 #page-overlay{position:fixed;inset:0;z-index:1000;pointer-events:none;background:var(--bg);opacity:0;transition:opacity .26s ease;}
 #page-overlay.show{opacity:.82;}
@@ -267,20 +268,125 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important;}.reveal{opacity:1;transform:none;}html{scroll-behavior:auto;}}
 @media(max-width:920px){
   nav{padding:0 10px 0 16px;}
-  .nav-links{position:fixed;top:84px;left:16px;right:16px;flex-direction:column;gap:2px;border-radius:14px;padding:8px;display:none;background:rgba(10,10,13,.96);border:1px solid var(--line);}
-  .nav-links.open{display:flex;}
-  .nav-links a{padding:13px;border-radius:9px;}
-  .nav-toggle{display:inline-block;}
+
+  /* ── MOBILE DROPDOWN ── */
+  .nav-links{
+    position:fixed;
+    top:84px;
+    left:16px;
+    right:16px;
+    flex-direction:column;
+    gap:4px;
+    border-radius:16px;
+    padding:10px;
+    display:none;
+    background:rgba(8,8,11,.97);
+    border:1px solid rgba(255,255,255,.12);
+    backdrop-filter:blur(24px) saturate(160%);
+    -webkit-backdrop-filter:blur(24px) saturate(160%);
+    box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.04) inset;
+    z-index:200;
+    /* animation */
+    opacity:0;
+    transform:translateY(-6px);
+    pointer-events:none;
+    transition:opacity .18s ease,transform .18s ease;
+  }
+  .nav-links.open{
+    display:flex;
+    opacity:1;
+    transform:translateY(0);
+    pointer-events:auto;
+  }
+  .nav-links a{
+    padding:14px 16px;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:500;
+    letter-spacing:.01em;
+  }
+  .nav-links a:hover,.nav-links a.active{
+    background:rgba(255,255,255,.08);
+    color:var(--text);
+  }
+
+  /* ── MENU BUTTON ── better tap target, clearer label ── */
+  .nav-toggle{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:10px;
+    cursor:pointer;
+    width:44px;
+    height:44px;
+  }
+  .nav-toggle::before{
+    content:'';
+    display:block;
+    width:16px;
+    height:2px;
+    background:var(--text);
+    box-shadow:0 5px 0 var(--text), 0 -5px 0 var(--text);
+    border-radius:2px;
+  }
+
   .nav-cta{display:none;}
+
+  /* ── LAYOUT ── */
   .wrap{padding:0 16px 70px;}
+  .page{padding-top:88px;}
+
+  /* ── HERO ── */
+  .hero-h1{font-size:clamp(36px,10vw,52px);margin:18px 0 16px;}
+  .hero-sub{font-size:16px;margin-bottom:26px;}
+  .hero-cta{gap:10px;}
+  .hero-cta .btn{padding:12px 20px;font-size:13px;}
+  .scroll-cue{font-size:10px;margin-top:36px;}
+
+  /* ── SECTION TITLES ── */
+  .sec-title{font-size:clamp(28px,8vw,44px);}
+
+  /* ── GRIDS ── */
   .cz-grid{grid-template-columns:1fr;}
   .stat-grid{grid-template-columns:1fr 1fr;}
   .stat:nth-child(5){grid-column:1/-1;}
   .about-grid,.ct-grid,.sk-grid,.sq-grid{grid-template-columns:1fr;}
   .pbullets{grid-template-columns:1fr;}
-  #wu-list .wu-row{grid-template-columns:1fr;gap:5px;}
+
+  /* ── CARDS ── */
+  .pcard{padding:24px 22px;}
+  .about-main{padding:24px 22px;}
+  .about-main p{font-size:17px;}
+  .skblock{padding:24px 22px;}
+  .wu-article-wrap{padding:24px 22px;}
+
+  /* ── WRITEUPS LIST ── */
+  #wu-list .wu-row{grid-template-columns:1fr;gap:5px;padding:18px 16px;}
+  .wu-date{display:none;}
   .wu-tag{text-align:left;}
+  .wu-ttl{font-size:16px;}
+
+  /* ── RISK WIDGET ── */
   .risk-row{flex-direction:column;align-items:stretch;}
+  .risk-score{text-align:left;min-width:unset;}
+
+  /* ── TERMINAL ── */
+  .terminal{margin:30px auto 0;}
+  .term-body{font-size:12px;}
+
+  /* ── PAGE NAV BUTTONS ── */
+  .pgbtn{padding:14px 16px;}
+  .pgbtn b{font-size:16px;}
+
+  /* ── CONTACT ── */
+  .ct-l{padding:24px 22px;}
+  .ct-title{font-size:clamp(28px,8vw,44px);}
+
+  /* ── FOOTER ── */
+  footer{padding:18px 16px;gap:10px;}
+  .ft{font-size:10px;}
 }
 </style>
 </head>
@@ -301,7 +407,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
       <li><a data-page="sidequests" href="#sidequests">Side Quests</a></li>
     </ul>
     <button class="nav-cta" data-page="contact">Get in touch</button>
-    <button class="nav-toggle" id="nav-toggle" aria-label="Menu">Menu</button>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false"><span class="nav-toggle-text">Menu</span></button>
   </div>
 </nav>
 
@@ -310,7 +416,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
   <div class="wrap">
     <div id="hero">
       <div class="hero-inner">
-        <span class="eyebrow fu"><span class="dot"></span> Offensive-Detection Engineer · Open to work · 2026</span>
+        <span class="eyebrow fu"><span class="dot"></span> Detection Engineer · Open to work · 2026</span>
         <h1 class="hero-h1 fu">I build the systems most people only <span class="soft">study.</span></h1>
         <p class="hero-sub fu"><b>Aryan</b> — a.k.a. <b>honeybadger</b>. Attack the lab, write the detection, automate the build.</p>
         <div class="hero-cta fu">
@@ -335,7 +441,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
       <div class="stat"><div class="stat-n">PNPT</div><div class="stat-l">In progress · TCM</div></div>
     </div>
 
-    <p class="home-tease">Multiple projects, one loop: <b>attack the lab → write the detection → automate the build.</b> The full breakdown lives under <a href="#projects" data-page="projects">Work</a>.</p>
+    <p class="home-tease">Three projects, one loop: <b>attack the lab → write the detection → automate the build.</b> The full breakdown lives under <a href="#projects" data-page="projects">Work</a>.</p>
 
     <div class="cz">
       <div class="cz-head">
@@ -1038,7 +1144,17 @@ run</pre>
 
   /* ── MOBILE NAV ── */
   var navToggle=el('nav-toggle'),navLinks=el('nav-links');
-  navToggle.addEventListener('click',function(){navLinks.classList.toggle('open');});
+  navToggle.addEventListener('click',function(e){
+    e.stopPropagation();
+    var isOpen=navLinks.classList.toggle('open');
+    navToggle.setAttribute('aria-expanded',isOpen?'true':'false');
+  });
+  document.addEventListener('click',function(e){
+    if(navLinks.classList.contains('open')&&!navLinks.contains(e.target)&&e.target!==navToggle){
+      navLinks.classList.remove('open');
+      navToggle.setAttribute('aria-expanded','false');
+    }
+  });
 
   /* ── ROUTER ── */
   var PAGES=['home','about','skills','projects','writeups','sidequests','contact'];
