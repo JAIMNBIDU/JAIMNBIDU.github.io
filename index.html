@@ -80,6 +80,9 @@ nav::before{content:'';position:absolute;inset:0;border-radius:16px;background:l
 .reveal.vis{opacity:1;transform:none;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 .fu{opacity:0;animation:fadeUp .8s cubic-bezier(.2,.7,.2,1) forwards;}
+/* ── BLUR TEXT (vanilla port of React Bits BlurText) ── */
+.bw{display:inline-block;opacity:0;filter:blur(12px);transform:translateY(-14px);transition:opacity .55s ease,filter .55s ease,transform .55s cubic-bezier(.2,.7,.2,1);will-change:opacity,filter,transform;}
+.bw.in{opacity:1;filter:blur(0);transform:none;}
 .fu:nth-child(1){animation-delay:.05s}.fu:nth-child(2){animation-delay:.16s}.fu:nth-child(3){animation-delay:.28s}
 .fu:nth-child(4){animation-delay:.4s}.fu:nth-child(5){animation-delay:.52s}.fu:nth-child(6){animation-delay:.64s}
 
@@ -452,7 +455,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
     <div id="hero">
       <div class="hero-inner">
         <span class="eyebrow fu"><span class="dot"></span> Detection Engineer · Open to work · 2026</span>
-        <h1 class="hero-h1 fu">I build the systems most people only <span class="soft">study.</span></h1>
+        <h1 class="hero-h1 blur-text" data-blur="words">I build the systems most people only <span class="soft">study.</span></h1>
         <p class="hero-sub fu"><b>Aryan</b> — a.k.a. <b>honeybadger</b>. Attack the lab, write the detection, automate the build.</p>
         <div class="hero-cta fu">
           <button class="btn" data-page="projects">View the work</button>
@@ -1292,6 +1295,38 @@ run</pre>
       else if(e.key==='ArrowDown'){if(histPos<histArr.length-1){histPos++;tinput.value=histArr[histPos]||'';}else{histPos=histArr.length;tinput.value='';}}
     });
     var term=tinput.closest('.terminal');if(term)term.addEventListener('click',function(){tinput.focus();});}
+
+  /* ── BLUR TEXT ENGINE (vanilla port — no deps, splits into words, blur-in on view) ── */
+  function blurText(host){
+    var tokens=[];
+    (function walk(node,cls){
+      for(var i=0;i<node.childNodes.length;i++){
+        var n=node.childNodes[i];
+        if(n.nodeType===3){
+          var parts=n.nodeValue.split(/(\s+)/);
+          for(var p=0;p<parts.length;p++){
+            if(parts[p]==='')continue;
+            if(/^\s+$/.test(parts[p]))tokens.push({space:true});
+            else tokens.push({text:parts[p],cls:cls});
+          }
+        }else if(n.nodeType===1){
+          walk(n,((cls?cls+' ':'')+(n.getAttribute('class')||'')).trim());
+        }
+      }
+    })(host,'');
+    host.textContent='';
+    var spans=[];
+    tokens.forEach(function(t){
+      if(t.space){host.appendChild(d.createTextNode(' '));return;}
+      var s=d.createElement('span');s.className='bw'+(t.cls?' '+t.cls:'');s.textContent=t.text;
+      host.appendChild(s);spans.push(s);
+    });
+    function reveal(){spans.forEach(function(s,i){s.style.transitionDelay=(i*0.09)+'s';s.classList.add('in');});}
+    if(reduce||!('IntersectionObserver' in window)){spans.forEach(function(s){s.classList.add('in');});return;}
+    var obs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){reveal();obs.disconnect();}});},{threshold:0.1});
+    obs.observe(host);
+  }
+  var bt=d.querySelectorAll('.blur-text');for(var bi=0;bi<bt.length;bi++)blurText(bt[bi]);
 
   /* ── INIT ROUTE ── */
   var initId=(location.hash||'').replace('#','');if(PAGES.indexOf(initId)===-1)initId='home';
