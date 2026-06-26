@@ -503,14 +503,14 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
             <button class="sw" data-c="blue" aria-label="Blue"></button>
           </div>
         </div>
-        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Color Intensity</span><span class="cz-val" id="v-levels">4</span></div><input type="range" id="c-levels" min="2" max="8" step="1" value="4"></div>
-        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Wave Amplitude</span><span class="cz-val" id="v-amp">0.30</span></div><input type="range" id="c-amp" min="0" max="1" step="0.05" value="0.3"></div>
-        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Wave Frequency</span><span class="cz-val" id="v-freq">3.0</span></div><input type="range" id="c-freq" min="1" max="6" step="0.5" value="3"></div>
-        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Wave Speed</span><span class="cz-val" id="v-speed">0.05</span></div><input type="range" id="c-speed" min="0" max="0.2" step="0.01" value="0.05"></div>
-        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Pixel Size</span><span class="cz-val" id="v-px">2</span></div><input type="range" id="c-px" min="1" max="8" step="1" value="2"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Color Intensity</span><span class="cz-val" id="v-levels">8</span></div><input type="range" id="c-levels" min="2" max="8" step="1" value="8"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Wave Amplitude</span><span class="cz-val" id="v-amp">0.15</span></div><input type="range" id="c-amp" min="0" max="1" step="0.05" value="0.15"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Wave Frequency</span><span class="cz-val" id="v-freq">5.0</span></div><input type="range" id="c-freq" min="1" max="6" step="0.5" value="5"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Wave Speed</span><span class="cz-val" id="v-speed">0.06</span></div><input type="range" id="c-speed" min="0" max="0.2" step="0.01" value="0.06"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Pixel Size</span><span class="cz-val" id="v-px">1</span></div><input type="range" id="c-px" min="1" max="8" step="1" value="1"></div>
         <div class="cz-ctrl"><div class="row"><span class="cz-lab">Disable Animation</span><span class="tg" id="t-anim" role="switch" aria-checked="false" tabindex="0"></span></div></div>
         <div class="cz-ctrl"><div class="row"><span class="cz-lab">Mouse Interaction</span><span class="tg on" id="t-mouse" role="switch" aria-checked="true" tabindex="0"></span></div></div>
-        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Mouse Radius</span><span class="cz-val" id="v-mr">0.50</span></div><input type="range" id="c-mr" min="0.1" max="1.2" step="0.05" value="0.5"></div>
+        <div class="cz-ctrl"><div class="row"><span class="cz-lab">Mouse Radius</span><span class="cz-val" id="v-mr">0.35</span></div><input type="range" id="c-mr" min="0.1" max="1.2" step="0.05" value="0.35"></div>
       </div>
     </div>
   </div>
@@ -1051,7 +1051,7 @@ run</pre>
 
   /* ════════ REAL WEBGL DITHER (ported from React Bits) ════════ */
   var COLORS={grayscale:[0.78,0.78,0.82],red:[0.86,0.16,0.10],purple:[0.58,0.32,0.92],blue:[0.27,0.50,0.94]};
-  var DEFAULTS={color:'grayscale',levels:4,amp:0.3,freq:3,speed:0.05,px:2,anim:true,mouse:true,mr:0.5};
+  var DEFAULTS={color:'grayscale',levels:8,amp:0.15,freq:5,speed:0.06,px:1,anim:true,mouse:true,mr:0.35};
   var P={};for(var k in DEFAULTS)P[k]=DEFAULTS[k];
 
   var canvas=el('dither');
@@ -1181,12 +1181,12 @@ run</pre>
   swWrap.addEventListener('click',function(e){var b=e.target.closest('.sw');if(!b)return;swWrap.querySelectorAll('.sw').forEach(function(s){s.classList.remove('active');});b.classList.add('active');P.color=b.getAttribute('data-c');if(!P.anim||reduce)drawStatic();});
   el('cz-reset').addEventListener('click',function(){
     for(var kk in DEFAULTS)P[kk]=DEFAULTS[kk];
-    el('c-levels').value=4;el('v-levels').textContent='4';
-    el('c-amp').value=0.3;el('v-amp').textContent='0.30';
-    el('c-freq').value=3;el('v-freq').textContent='3.0';
-    el('c-speed').value=0.05;el('v-speed').textContent='0.05';
-    el('c-px').value=2;el('v-px').textContent='2';
-    el('c-mr').value=0.5;el('v-mr').textContent='0.50';
+    el('c-levels').value=8;el('v-levels').textContent='8';
+    el('c-amp').value=0.15;el('v-amp').textContent='0.15';
+    el('c-freq').value=5;el('v-freq').textContent='5.0';
+    el('c-speed').value=0.06;el('v-speed').textContent='0.06';
+    el('c-px').value=1;el('v-px').textContent='1';
+    el('c-mr').value=0.35;el('v-mr').textContent='0.35';
     tAnim.classList.remove('on');tAnim.setAttribute('aria-checked','false');
     tMouse.classList.add('on');tMouse.setAttribute('aria-checked','true');
     swWrap.querySelectorAll('.sw').forEach(function(s){s.classList.toggle('active',s.getAttribute('data-c')==='grayscale');});
