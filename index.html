@@ -218,9 +218,13 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 .risk-bar{height:5px;border-radius:4px;background:var(--line);margin-top:13px;overflow:hidden;}
 .risk-bar i{display:block;height:100%;background:var(--text);transition:width .25s ease;}
 
-#wu-list{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);}
+#wu-list{display:flex;flex-direction:column;gap:32px;}
+.wu-group-label{margin-bottom:13px;}
+.wu-group-label .wgl-k{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--text);}
+.wu-group-label .wgl-d{font-family:var(--body);font-size:13px;line-height:1.5;color:var(--dim);margin-top:3px;max-width:60ch;}
+.wu-group{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);}
 #wu-list .wu-row{display:grid;grid-template-columns:116px 1fr 150px;gap:26px;align-items:center;width:100%;text-align:left;padding:22px 22px;border:none;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;transition:background .15s,padding-left .15s;font-family:var(--body);color:inherit;}
-#wu-list .wu-row:last-child{border-bottom:none;}
+.wu-group .wu-row:last-child{border-bottom:none;}
 #wu-list .wu-row:hover{background:var(--card-hi);padding-left:28px;}
 .wu-date{font-family:var(--mono);font-size:11px;color:var(--faint);}
 .wu-ttl{font-family:var(--sans);font-weight:600;font-size:19px;letter-spacing:-.01em;}
@@ -613,14 +617,33 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
   <div class="wrap">
     <div class="sec-head"><div class="sec-kicker">04 — <b>Writeups</b></div><h2 class="sec-title">Attack, then detect.</h2><p class="sec-lead">Every walkthrough ends where the real work begins — the detection and mitigation. Knowing how to run the attack is table stakes; knowing how to stop it is the job.</p></div>
     <div id="wu-list">
-      <button class="wu-row" data-wu="classroomenv"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ClassroomEnv — Build &amp; Debugging</span><span class="wu-tag">Tooling</span></button>
-      <button class="wu-row" data-wu="threatlens"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ThreatLens — Threat Intelligence Platform</span><span class="wu-tag">Tooling</span></button>
-      <button class="wu-row" data-wu="academy"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Academy — Credential Exposure to Root</span><span class="wu-tag">HackTheBox</span></button>
-      <button class="wu-row" data-wu="blue"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Blue — EternalBlue by Hand</span><span class="wu-tag">HackTheBox</span></button>
-      <button class="wu-row" data-wu="kioptrix"><span class="wu-date">Jan 2026</span><span class="wu-ttl">Kioptrix — SMB to Root via trans2open</span><span class="wu-tag">VulnHub</span></button>
-      <button class="wu-row" data-wu="vulnhub-lab"><span class="wu-date">Jun 2025</span><span class="wu-ttl">Building a Virtual Hacking Lab</span><span class="wu-tag">Lab Setup</span></button>
-      <button class="wu-row" data-wu="smb-relay"><span class="wu-date">May 2025</span><span class="wu-ttl">SMB Relay in Practice</span><span class="wu-tag">Active Directory</span></button>
-      <button class="wu-row" data-wu="mr-robot"><span class="wu-date">Apr 2025</span><span class="wu-ttl">Mr. Robot — Wordlist Warfare</span><span class="wu-tag">VulnHub</span></button>
+
+      <div class="wu-group-block">
+        <div class="wu-group-label"><div class="wgl-k">Projects</div><div class="wgl-d">Tools I designed and built — and the engineering decisions and failures behind them.</div></div>
+        <div class="wu-group">
+          <button class="wu-row" data-wu="classroomenv"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ClassroomEnv — Build &amp; Debugging</span><span class="wu-tag">Tooling</span></button>
+          <button class="wu-row" data-wu="threatlens"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ThreatLens — Threat Intelligence Platform</span><span class="wu-tag">Tooling</span></button>
+        </div>
+      </div>
+
+      <div class="wu-group-block">
+        <div class="wu-group-label"><div class="wgl-k">Active Directory</div><div class="wgl-d">Enterprise AD attacks run end to end in my own domain — and the detection that catches them.</div></div>
+        <div class="wu-group">
+          <button class="wu-row" data-wu="smb-relay"><span class="wu-date">May 2025</span><span class="wu-ttl">SMB Relay in Practice</span><span class="wu-tag">Active Directory</span></button>
+        </div>
+      </div>
+
+      <div class="wu-group-block">
+        <div class="wu-group-label"><div class="wgl-k">Labs &amp; Machine Walkthroughs</div><div class="wgl-d">HackTheBox and VulnHub boxes run locally on VMware/Proxmox from ISOs and OVAs — plus how the lab itself is built.</div></div>
+        <div class="wu-group">
+          <button class="wu-row" data-wu="academy"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Academy — Credential Exposure to Root</span><span class="wu-tag">HackTheBox</span></button>
+          <button class="wu-row" data-wu="blue"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Blue — EternalBlue by Hand</span><span class="wu-tag">HackTheBox</span></button>
+          <button class="wu-row" data-wu="kioptrix"><span class="wu-date">Jan 2026</span><span class="wu-ttl">Kioptrix — SMB to Root via trans2open</span><span class="wu-tag">VulnHub</span></button>
+          <button class="wu-row" data-wu="vulnhub-lab"><span class="wu-date">Jun 2025</span><span class="wu-ttl">Building a Virtual Hacking Lab</span><span class="wu-tag">Lab Setup</span></button>
+          <button class="wu-row" data-wu="mr-robot"><span class="wu-date">Apr 2025</span><span class="wu-ttl">Mr. Robot — Wordlist Warfare</span><span class="wu-tag">VulnHub</span></button>
+        </div>
+      </div>
+
     </div>
     <div id="wu-detail">
       <button class="wu-back" id="wu-back-btn">Back to writeups</button>
@@ -1018,7 +1041,7 @@ run</pre>
         <a class="ct-link" href="mailto:gorkijaimnbidu18@gmail.com"><span>gorkijaimnbidu18@gmail.com</span><span>→</span></a>
         <a class="ct-link" href="https://github.com/JAIMNBIDU" target="_blank" rel="noopener noreferrer"><span>github.com/JAIMNBIDU</span><span>→</span></a>
         <a class="ct-link" href="https://www.linkedin.com/in/aryan-workofficial/" target="_blank" rel="noopener noreferrer"><span>linkedin — aryan-workofficial</span><span>→</span></a>
-        <a class="ct-link" href="Aryan-Resume.pdf" download><span>Download résumé (pdf)</span><span>↓</span></a>
+        <a class="ct-link" href="Aryan-Resume.pdf" download><span>download résumé (pdf)</span><span>↓</span></a>
       </div>
       <div class="ct-r reveal">
         <p>For sensitive assessments or NDA-first conversations, email is fine to start. All scope is treated as confidential by default.</p>
