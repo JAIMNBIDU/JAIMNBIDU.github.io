@@ -220,10 +220,7 @@ input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;bac
 
 #wu-list{border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);}
 #wu-list .wu-row{display:grid;grid-template-columns:116px 1fr 150px;gap:26px;align-items:center;width:100%;text-align:left;padding:22px 22px;border:none;border-bottom:1px solid var(--line);background:transparent;cursor:pointer;transition:background .15s,padding-left .15s;font-family:var(--body);color:inherit;}
-.wu-group-head{display:flex;align-items:center;justify-content:space-between;padding:13px 22px;background:rgba(255,255,255,.025);border-bottom:1px solid var(--line);}
-.wu-group-name{font-family:var(--mono);font-size:11px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);font-weight:600;}
-.wu-group-count{font-family:var(--mono);font-size:11px;color:var(--faint);}
-#wu-list .wu-group:last-child .wu-row:last-child{border-bottom:none;}
+#wu-list .wu-row:last-child{border-bottom:none;}
 #wu-list .wu-row:hover{background:var(--card-hi);padding-left:28px;}
 .wu-date{font-family:var(--mono);font-size:11px;color:var(--faint);}
 .wu-ttl{font-family:var(--sans);font-weight:600;font-size:19px;letter-spacing:-.01em;}
@@ -404,7 +401,6 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
 
   /* ── WRITEUPS LIST ── */
   #wu-list .wu-row{grid-template-columns:1fr;gap:5px;padding:18px 16px;}
-  .wu-group-head{padding:11px 16px;}
   .wu-date{display:none;}
   .wu-tag{text-align:left;}
   .wu-ttl{font-size:16px;}
@@ -470,7 +466,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
     </div>
 
     <div class="terminal fu">
-      <div class="term-bar"><span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span><span class="term-title">JAIMNBIDU@portfolio: ~</span></div>
+      <div class="term-bar"><span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span><span class="term-title">jaimnbidu@portfolio: ~</span></div>
       <div class="term-body" id="term-body" aria-live="polite"></div>
       <div class="term-input-row"><span class="term-prompt">$</span><input id="term-input" type="text" autocomplete="off" spellcheck="false" placeholder="type 'help' and hit enter…" aria-label="terminal input"></div>
     </div>
@@ -522,7 +518,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
     <div class="sec-head"><div class="sec-kicker">01 — <b>About</b></div><h2 class="sec-title">The operator behind the handle.</h2></div>
     <div class="about-grid">
       <div class="about-main reveal">
-        <p>I stand up entire environments from scratch on VMware Workstation Pro, attack them from the inside, then engineer the detection and tooling that make the next attack visible — a four-machine AD lab feeding custom Wazuh detections, a threat-intel platform that turns three noisy feeds into one prioritized signal, a deployment framework rigorous enough to trust an entire classroom to.</p>
+        <p>I stand up environments from bare metal, attack them from the inside, then engineer the detection and tooling that make the next attack visible — a four-machine AD lab feeding custom Wazuh detections, a threat-intel platform that turns three noisy feeds into one prioritized signal, a deployment framework rigorous enough to trust an entire classroom to.</p>
         <p>I learn by building. When I misconfigure something in my AD lab and then find it through BloodHound, I understand the misconfiguration in a way reading about it never produces. I ran EternalBlue by hand instead of through a one-line Metasploit module — Wireshark open the whole time — because I wanted to see what the exploit actually does at the packet level. The lab is permanent: not a box I solve and move on from, but a living environment I keep breaking and defending.</p>
         <p>I'm drawn to the gap between what a system was <em>designed</em> to do and what it actually does under pressure — and to the work of closing that gap and proving it stayed closed.</p>
         <p>Offense taught me how things fail. Detection is where I make failure visible. Engineering is how I make either one repeatable. I don't decorate ideas with noise — I find the signal.</p>
@@ -543,6 +539,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
         <div class="arow"><span class="akey">GitHub</span><span class="aval"><a href="https://github.com/JAIMNBIDU" target="_blank" rel="noopener noreferrer">JAIMNBIDU</a></span></div>
         <div class="arow"><span class="akey">LinkedIn</span><span class="aval"><a href="https://www.linkedin.com/in/aryan-workofficial/" target="_blank" rel="noopener noreferrer">aryan-workofficial</a></span></div>
         <div class="arow"><span class="akey">Status</span><span class="aval">Open — reach out</span></div>
+        <div class="arow"><span class="akey">Résumé</span><span class="aval"><a href="Aryan-Resume.pdf" download>download (pdf) ↓</a></span></div>
       </div>
     </div>
     <div class="page-nav" data-pagenav></div>
@@ -557,7 +554,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
       <div class="skblock reveal"><div class="sk-n">01</div><h3 class="sk-t">Detection &amp; Defense</h3><div class="tags"><span class="tag hl">Wazuh SIEM</span><span class="tag">Custom Rules</span><span class="tag">Alert Tuning</span><span class="tag">Log Analysis</span><span class="tag">ATT&amp;CK Mapping</span><span class="tag">IR</span></div><p class="sk-note">Where the signal lives — and where I'm strongest. I write detections against attacks I've personally executed, tune thresholds to kill false positives, and map every rule to a MITRE technique so an analyst knows what it's catching and why.</p></div>
       <div class="skblock reveal"><div class="sk-n">02</div><h3 class="sk-t">Tooling &amp; Dev</h3><div class="tags"><span class="tag hl">Python</span><span class="tag">FastAPI</span><span class="tag">React</span><span class="tag">async httpx</span><span class="tag">Bash</span><span class="tag">REST</span><span class="tag">Git</span></div><p class="sk-note">Production instincts in side-project clothing: concurrency with fcntl locking and async httpx, supply-chain hygiene (pinned versions, HTTPS-enforced sources), least-privilege and server-side secret isolation built in from the first commit, not bolted on later.</p></div>
       <div class="skblock reveal"><div class="sk-n">03</div><h3 class="sk-t">Offensive Security</h3><div class="tags"><span class="tag hl">BloodHound</span><span class="tag">Impacket</span><span class="tag">NetExec</span><span class="tag">Metasploit</span><span class="tag">Burp Suite</span><span class="tag">Nmap</span></div><p class="sk-note">Kerberoasting, AS-REP roasting, SMB relay, lateral movement, privilege escalation — the canonical AD chain, run by hand against a lab I built to be beaten. Foundational and real; its highest value is as the generator for everything in column 01.</p></div>
-      <div class="skblock reveal"><div class="sk-n">04</div><h3 class="sk-t">Infra &amp; Network</h3><div class="tags"><span class="tag hl">VMware Workstation Pro</span><span class="tag">Docker</span><span class="tag">Windows Server</span><span class="tag">Active Directory</span><span class="tag">GPO</span><span class="tag">Wireshark</span></div><p class="sk-note">Whole virtual environments on VMware Workstation Pro: domain (AD DS / DNS / DHCP / GPO), isolated host-only networks, packet capture. TCP/IP and subnetting at the level where Wireshark is a reflex. Currently sharpening: cloud (Azure fundamentals) and the PNPT.</p></div>
+      <div class="skblock reveal"><div class="sk-n">04</div><h3 class="sk-t">Infra &amp; Network</h3><div class="tags"><span class="tag hl">Proxmox</span><span class="tag">VMware</span><span class="tag">Docker</span><span class="tag">Windows Server</span><span class="tag">Active Directory</span><span class="tag">Wireshark</span></div><p class="sk-note">Whole environments from bare metal: hypervisor, domain (AD DS / DNS / DHCP / GPO), isolated VLANs, packet capture. TCP/IP and subnetting at the level where Wireshark is a reflex. Currently sharpening: cloud (Azure fundamentals) and the PNPT.</p></div>
     </div>
     <div class="page-nav" data-pagenav></div>
   </div>
@@ -598,7 +595,7 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
     <div class="pcard reveal">
       <div class="pcard-top"><span class="ptype">Offensive Lab</span><span class="pstatus">Ongoing · 2025</span></div>
       <h3 class="ptitle">Enterprise AD Attack Lab</h3>
-      <p class="pdesc">Four-machine Active Directory environment on VMware Workstation Pro — DC, two Windows clients, Kali attacker — provisioned to mirror enterprise conditions, then run through the canonical attack chains. Its real value: it generates the detection content.</p>
+      <p class="pdesc">Four-machine virtualized Active Directory environment — DC, two Windows clients, Kali attacker — provisioned to mirror enterprise conditions, then run through the canonical attack chains. Its real value: it generates the detection content.</p>
       <ul class="pbullets"><li>AD DS, DNS, DHCP, GPOs, OUs, user provisioning</li><li>SMB Relay, Kerberoasting, AS-REP Roasting</li><li>Lateral movement + privilege escalation</li><li>BloodHound · Impacket · NetExec</li></ul>
     </div>
     <div class="pcard reveal">
@@ -616,23 +613,14 @@ a:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(-
   <div class="wrap">
     <div class="sec-head"><div class="sec-kicker">04 — <b>Writeups</b></div><h2 class="sec-title">Attack, then detect.</h2><p class="sec-lead">Every walkthrough ends where the real work begins — the detection and mitigation. Knowing how to run the attack is table stakes; knowing how to stop it is the job.</p></div>
     <div id="wu-list">
-      <div class="wu-group">
-        <div class="wu-group-head"><span class="wu-group-name">Lab &amp; Active Directory</span><span class="wu-group-count">2</span></div>
-        <button class="wu-row" data-wu="vulnhub-lab"><span class="wu-date">Jun 2025</span><span class="wu-ttl">Building a Virtual Hacking Lab</span><span class="wu-tag">Lab Setup</span></button>
-        <button class="wu-row" data-wu="smb-relay"><span class="wu-date">May 2025</span><span class="wu-ttl">SMB Relay in Practice</span><span class="wu-tag">Active Directory</span></button>
-      </div>
-      <div class="wu-group">
-        <div class="wu-group-head"><span class="wu-group-name">Projects &amp; Tooling</span><span class="wu-group-count">2</span></div>
-        <button class="wu-row" data-wu="classroomenv"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ClassroomEnv — Build &amp; Debugging</span><span class="wu-tag">Tooling</span></button>
-        <button class="wu-row" data-wu="threatlens"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ThreatLens — Threat Intelligence Platform</span><span class="wu-tag">Tooling</span></button>
-      </div>
-      <div class="wu-group">
-        <div class="wu-group-head"><span class="wu-group-name">Machine Exploitation</span><span class="wu-group-count">4</span></div>
-        <button class="wu-row" data-wu="blue"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Blue — EternalBlue by Hand</span><span class="wu-tag">HackTheBox</span></button>
-        <button class="wu-row" data-wu="academy"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Academy — Credential Exposure to Root</span><span class="wu-tag">HackTheBox</span></button>
-        <button class="wu-row" data-wu="kioptrix"><span class="wu-date">Jan 2026</span><span class="wu-ttl">Kioptrix — SMB to Root via trans2open</span><span class="wu-tag">VulnHub</span></button>
-        <button class="wu-row" data-wu="mr-robot"><span class="wu-date">Apr 2025</span><span class="wu-ttl">Mr. Robot — Wordlist Warfare</span><span class="wu-tag">VulnHub</span></button>
-      </div>
+      <button class="wu-row" data-wu="classroomenv"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ClassroomEnv — Build &amp; Debugging</span><span class="wu-tag">Tooling</span></button>
+      <button class="wu-row" data-wu="threatlens"><span class="wu-date">Jun 2026</span><span class="wu-ttl">ThreatLens — Threat Intelligence Platform</span><span class="wu-tag">Tooling</span></button>
+      <button class="wu-row" data-wu="academy"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Academy — Credential Exposure to Root</span><span class="wu-tag">HackTheBox</span></button>
+      <button class="wu-row" data-wu="blue"><span class="wu-date">Feb 2026</span><span class="wu-ttl">Blue — EternalBlue by Hand</span><span class="wu-tag">HackTheBox</span></button>
+      <button class="wu-row" data-wu="kioptrix"><span class="wu-date">Jan 2026</span><span class="wu-ttl">Kioptrix — SMB to Root via trans2open</span><span class="wu-tag">VulnHub</span></button>
+      <button class="wu-row" data-wu="vulnhub-lab"><span class="wu-date">Jun 2025</span><span class="wu-ttl">Building a Virtual Hacking Lab</span><span class="wu-tag">Lab Setup</span></button>
+      <button class="wu-row" data-wu="smb-relay"><span class="wu-date">May 2025</span><span class="wu-ttl">SMB Relay in Practice</span><span class="wu-tag">Active Directory</span></button>
+      <button class="wu-row" data-wu="mr-robot"><span class="wu-date">Apr 2025</span><span class="wu-ttl">Mr. Robot — Wordlist Warfare</span><span class="wu-tag">VulnHub</span></button>
     </div>
     <div id="wu-detail">
       <button class="wu-back" id="wu-back-btn">Back to writeups</button>
@@ -727,8 +715,8 @@ Metasploit, john, hydra,
           <p>Every time I spun up a cloud VM for practice, something felt wrong — the latency, the shared hardware, the dependency on someone else's infrastructure. A local lab removes all of that. You own the network, the machines, the environment.</p>
           <p><strong>The goal: a fully isolated environment where I can practice offensive techniques without restraint, consequence, or connectivity to anything real.</strong></p>
           <h3>Infrastructure</h3>
-          <pre>Host:       VMware Workstation Pro 17
-Network:    Isolated host-only network (VMnet)
+          <pre>Host:       Proxmox VE 8.x
+Network:    Isolated host-only VLAN
 Attack box: Kali Linux
 Targets:    VulnHub OVAs + Windows Server (AD lab)</pre>
           <h2>Academy (HackTheBox)</h2>
@@ -1030,6 +1018,7 @@ run</pre>
         <a class="ct-link" href="mailto:gorkijaimnbidu18@gmail.com"><span>gorkijaimnbidu18@gmail.com</span><span>→</span></a>
         <a class="ct-link" href="https://github.com/JAIMNBIDU" target="_blank" rel="noopener noreferrer"><span>github.com/JAIMNBIDU</span><span>→</span></a>
         <a class="ct-link" href="https://www.linkedin.com/in/aryan-workofficial/" target="_blank" rel="noopener noreferrer"><span>linkedin — aryan-workofficial</span><span>→</span></a>
+        <a class="ct-link" href="Aryan-Resume.pdf" download><span>download résumé (pdf)</span><span>↓</span></a>
       </div>
       <div class="ct-r reveal">
         <p>For sensitive assessments or NDA-first conversations, email is fine to start. All scope is treated as confidential by default.</p>
@@ -1301,7 +1290,7 @@ run</pre>
     sudo:function(){print('nice try. this badger does not yield root.','accent');}
   };
   function runCmd(raw){var cmd=raw.trim().toLowerCase();print(raw,'cmd');if(!cmd)return;histArr.push(raw);histPos=histArr.length;var fn=CMDS[cmd.split(' ')[0]];if(fn)fn();else print("command not found: "+cmd+"  (try 'help')");}
-  if(tbody&&tinput){print('JAIMNBIDU // portfolio shell  —  type help','accent');print('');
+  if(tbody&&tinput){print('jaimnbidu // portfolio shell  —  type help','accent');print('');
     tinput.addEventListener('keydown',function(e){
       if(e.key==='Enter'){runCmd(tinput.value);tinput.value='';}
       else if(e.key==='ArrowUp'){if(histPos>0){histPos--;tinput.value=histArr[histPos]||'';}}
