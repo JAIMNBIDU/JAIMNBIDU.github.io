@@ -1294,9 +1294,9 @@ run</pre>
     navLinks.classList.remove('open');navToggle.setAttribute('aria-expanded','false');
     if(push&&window.history&&history.pushState)history.pushState({page:id},'','#'+id);
     overlay.classList.add('show');setTimeout(function(){swap(id,dir);overlay.classList.remove('show');},150);}
-  window.addEventListener('popstate',function(e){var id=(e.state&&e.state.page)||(location.hash||'').replace('#','')||'home';
-    if(PAGES.indexOf(id)===-1)id='home';if(id===current)return;
-    overlay.classList.add('show');setTimeout(function(){swap(id);overlay.classList.remove('show');},150);});
+  window.addEventListener('popstate',function(e){var r=parseRoute();if(e.state&&e.state.page){r={page:e.state.page,wu:e.state.wu||null};}
+    if(r.page!=='writeups')r.wu=null;
+    overlay.classList.add('show');setTimeout(function(){if(r.page!==current){swap(r.page);}else{el('wu-list').style.display='';el('wu-detail').classList.remove('active');}if(r.wu)openWriteup(r.wu,false);overlay.classList.remove('show');},150);});
 
   /* ── SWIPE BETWEEN PAGES (screen edges left to the OS back gesture) ── */
   (function(){
@@ -1327,10 +1327,14 @@ run</pre>
 
   /* ── WRITEUPS ── */
   var WU=['classroomenv','threatlens','academy','blue','kioptrix','marvel'];
-  function openWriteup(id){if(WU.indexOf(id)===-1)return;var arts=d.querySelectorAll('.wu-article');
+  function parseRoute(){var h=(location.hash||'').replace(/^#/,'');if(!h)return{page:'home',wu:null};var p=h.split('/');if(p[0]==='writeups'&&p[1]&&WU.indexOf(p[1])!==-1)return{page:'writeups',wu:p[1]};if(WU.indexOf(p[0])!==-1)return{page:'writeups',wu:p[0]};if(PAGES.indexOf(p[0])!==-1)return{page:p[0],wu:null};return{page:'home',wu:null};}
+  function openWriteup(id,push){if(WU.indexOf(id)===-1)return;var arts=d.querySelectorAll('.wu-article');
     for(var i=0;i<arts.length;i++)arts[i].classList.remove('show');var a=el('article-'+id);if(!a)return;
-    a.classList.add('show');el('wu-list').style.display='none';el('wu-detail').classList.add('active');window.scrollTo(0,0);}
-  el('wu-back-btn').addEventListener('click',function(){el('wu-detail').classList.remove('active');el('wu-list').style.display='';window.scrollTo(0,0);});
+    a.classList.add('show');el('wu-list').style.display='none';el('wu-detail').classList.add('active');window.scrollTo(0,0);
+    if(push!==false&&window.history&&history.pushState)history.pushState({page:'writeups',wu:id},'','#writeups/'+id);}
+  function closeWriteup(push){el('wu-detail').classList.remove('active');el('wu-list').style.display='';window.scrollTo(0,0);
+    if(push&&window.history&&history.pushState)history.pushState({page:'writeups',wu:null},'','#writeups');}
+  el('wu-back-btn').addEventListener('click',function(){closeWriteup(true);});
 
   d.addEventListener('click',function(e){
     var pg=e.target.closest('[data-page]');if(pg){e.preventDefault();navigate(pg.getAttribute('data-page'),true);return;}
@@ -1405,9 +1409,10 @@ run</pre>
   var bt=d.querySelectorAll('.blur-text');for(var bi=0;bi<bt.length;bi++)blurText(bt[bi]);
 
   /* ── INIT ROUTE ── */
-  var initId=(location.hash||'').replace('#','');if(PAGES.indexOf(initId)===-1)initId='home';
-  if(window.history&&history.replaceState)history.replaceState({page:initId},'','#'+initId);
-  swap(initId);
+  var r0=parseRoute();
+  if(window.history&&history.replaceState)history.replaceState({page:r0.page,wu:r0.wu},'',r0.wu?'#writeups/'+r0.wu:'#'+r0.page);
+  swap(r0.page);
+  if(r0.wu)openWriteup(r0.wu,false);
 })();
 </script>
 </body>
